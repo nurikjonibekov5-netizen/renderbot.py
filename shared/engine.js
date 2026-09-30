@@ -109,6 +109,27 @@ export class ClinicEngine {
     this.#emitChanges();
   }
 
+  // Haqiqiy rejim: server qayta ishga tushganda bugungi tarixni bazadan tiklaydi.
+  replay(rows) {
+    if (this.mode !== 'haqiqiy') return;
+    // Bazada faqat o'zgarishlar yozilgan, shuning uchun tiklash paytida signal uzilishi hisoblanmaydi.
+    const loss = this.tracker.signalLossMs;
+    this.tracker.signalLossMs = Infinity;
+    for (const row of rows) {
+      if (dayStart(row.vaqt) !== this.trackerDay) continue;
+      if (row.holat === 'signal_yoq') continue;
+      if (row.holat === 'binoda_emas') {
+        this.tracker.observe(row.xodim, row.vaqt, { roomId: null });
+        continue;
+      }
+      const roomId = row.xona
+        || this.clinic.rooms.find((r) => r.floor === row.qavat && r.type === 'maxfiy')?.id;
+      if (roomId) this.tracker.observe(row.xodim, row.vaqt, { roomId, moving: row.holat === 'yurmoqda' });
+    }
+    this.tracker.signalLossMs = loss;
+    this.tracker.advance(this.realNow());
+  }
+
   onChange(fn) {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
