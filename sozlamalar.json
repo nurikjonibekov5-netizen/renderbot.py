@@ -1,0 +1,12 @@
+{
+  "rejim": "simulyatsiya",
+  "namuna_malumotlar": true,
+  "port": 8080,
+  "parol": "",
+  "qabul_qiluvchi_kaliti": "",
+  "simulyatsiya_tezligi": 1,
+  "tarix_saqlash_kunlari": 90,
+  "uzoq_harakatsizlik_daqiqa": 20,
+  "signal_yoqolishi_soniya": 60,
+  "model_masshtabi": 0
+}

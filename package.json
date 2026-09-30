@@ -1,0 +1,30 @@
+{
+  "name": "klinika-3d-nazorati",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Klinika binosining 3D raqamli egizagi: xodimlar joylashuvi va kunlik faollik",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "vite build",
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.js",
+    "test:e2e": "node tests/e2e/run.js",
+    "build:demo": "vite build --mode demo"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "exceljs": "^4.4.0",
+    "playwright-core": "1.56.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.1",
+    "vite": "^8.3.1"
+  }
+}

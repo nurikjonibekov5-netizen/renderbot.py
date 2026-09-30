@@ -1,0 +1,9 @@
+node_modules/
+web/dist/
+dist-demo/
+data/*.db
+data/*.db-*
+data/parol.txt
+sozlamalar.local.json
+tests/e2e/screenshots/
+*.log

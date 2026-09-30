@@ -1,0 +1,22 @@
+obyekt_nomi,ekrandagi_nom,turi
+ROOM_1_102_Kabinet,Terapevt kabineti,ish
+ROOM_1_103_Kabinet,Pediatr kabineti,ish
+ROOM_1_104_Protsedura,Protsedura xonasi,ish
+ROOM_1_WC1_Hojatxona,Hojatxona,maxfiy
+ROOM_1_105_Kiyinish,Kiyinish xonasi,maxfiy
+ROOM_2_CORR_Koridor,2-qavat koridori,koridor
+ROOM_2_201_Palata,201-palata,ish
+ROOM_2_202_Palata,202-palata,ish
+ROOM_2_203_Post,Hamshiralar posti,ish
+ROOM_2_206_Kabinet,Jarroh kabineti,ish
+ROOM_3_CORR_Koridor,3-qavat koridori,koridor
+ROOM_3_301_Kabinet,Kardiolog kabineti,ish
+ROOM_3_302_Protsedura,3-qavat protsedura xonasi,ish
+ROOM_3_303_Palata,303-palata,ish
+ROOM_3_304_Palata,304-palata,ish
+ROOM_3_311_Laboratoriya,Qon tahlili laboratoriyasi,ish
+ROOM_3_WC1_Hojatxona,Hojatxona,maxfiy
+ROOM_4_CORR_Koridor,4-qavat koridori,koridor
+ROOM_4_403_Ombor,Oziq-ovqat ombori,ish
+ROOM_4_404_Kabinet,Bosh shifokor kabineti,ish
+ROOM_4_WC1_Hojatxona,Hojatxona,maxfiy
