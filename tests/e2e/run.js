@@ -8,6 +8,8 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { createApp } from '../../server/index.js';
+import { floorGlb } from '../../scripts/namuna-glb.js';
+import { writeFileSync } from 'node:fs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SHOTS = join(ROOT, 'tests', 'e2e', 'screenshots');
@@ -224,6 +226,43 @@ async function main() {
   } else {
     console.log('  (dist-demo yo\'q, "npm run build:demo" qiling)');
   }
+
+  console.log('\n3ds Max modeli (GLB) bilan:');
+  const modelsDir = join(SHOTS, 'models');
+  mkdirSync(modelsDir, { recursive: true });
+  // 2-qavat santimetrda (3ds Max odatiy birligi), bitta xona ataylab tushirib qoldirilgan.
+  writeFileSync(join(modelsDir, 'qavat_2.glb'), floorGlb(app.clinic, 2, { unit: 100, skip: ['ROOM_2_203_Post'], shiftX: 3 }));
+  const app2 = createApp({
+    root: ROOT,
+    settings: { parol: 'test123', baza_fayli: ':memory:', modellar_papkasi: modelsDir },
+    log: () => {},
+  });
+  await new Promise((r) => app2.server.listen(0, r));
+  const base2 = `http://127.0.0.1:${app2.server.address().port}`;
+  const g = await newPage(browser, { width: 1440, height: 900 });
+  await step('GLB model yuklanadi, o\'lchov birligi aniqlanadi, xonalar topiladi', async () => {
+    await g.page.goto(base2);
+    await g.page.fill('.login input', 'test123');
+    await g.page.click('.login button');
+    await g.page.waitForFunction(() => /2-qavat 3ds Max faylidan/.test(document.querySelector('.model-note')?.textContent || ''), null, { timeout: 15000 });
+    await g.page.click('.floor-switch button:has-text("2")');
+    await g.page.waitForTimeout(1500);
+    const rooms = await g.page.$$eval('.room-label', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.textContent));
+    assert.ok(rooms.includes('Operatsion xona'), rooms.join(','));
+    const info = await g.page.evaluate(() => {
+      const fl = window.__klinika.layout.floors[2];
+      return { w: fl.rooms.ROOM_2_205_Operatsion.w, stairs: fl.stairs };
+    });
+    assert.ok(info.w > 4 && info.w < 7, `xona kengligi ${info.w} m (santimetrdan metrga o'tmagan)`);
+    await g.page.screenshot({ path: join(SHOTS, '20-glb-model.png') });
+  });
+  await step('Modelda yo\'q xona haqida ogohlantirish chiqadi', async () => {
+    await g.page.click('.warnings summary');
+    const text = await g.page.textContent('.warnings');
+    assert.ok(text.includes('ROOM_2_203_Post'), text);
+  });
+  await step('GLB bilan konsolda xato yo\'q', async () => assert.deepEqual(g.errors.filter((e) => !/401|Unauthorized/.test(e)), []));
+  await app2.close();
 
   await browser.close();
   await app.close();

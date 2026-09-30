@@ -92,7 +92,7 @@ export function createApp({
   tickMs = 1000,
 } = {}) {
   const dataDir = join(root, 'data');
-  const modelsDir = join(root, 'models');
+  const modelsDir = settings.modellar_papkasi || join(root, 'models');
   const webDir = join(root, 'web', 'dist');
   mkdirSync(dataDir, { recursive: true });
 

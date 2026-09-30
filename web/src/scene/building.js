@@ -135,13 +135,14 @@ export function buildAutoFloor(floorLayout, floor, roomsById) {
   return group;
 }
 
-// 3ds Max'dan kelgan o'lchov birligini taxmin qiladi (santimetr, millimetr yoki metr).
-function guessScale(size, override) {
+// 3ds Max'dan kelgan o'lchov birligini taxmin qiladi: bitta qavat 8–300 metr bo'lishi kerak.
+// Tartib: metr, santimetr, millimetr, dyuym. Sozlamalarda "model_masshtabi" berilsa, o'sha olinadi.
+export function guessScale(size, override) {
   if (override > 0) return override;
   const max = Math.max(size.x, size.z);
-  if (max > 2000) return 0.001;
-  if (max > 200) return 0.01;
-  if (max > 120) return 0.0254;
+  for (const k of [1, 0.01, 0.001, 0.0254]) {
+    if (max * k >= 8 && max * k <= 300) return k;
+  }
   return 1;
 }
 
@@ -179,6 +180,22 @@ export async function loadModelFloor(loader, url, floor, clinic, { scale: scaleO
     const c = b.getCenter(new THREE.Vector3());
     const s = b.getSize(new THREE.Vector3());
     rooms[o.name] = { x: c.x, z: c.z, w: Math.max(s.x, 0.5), d: Math.max(s.z, 0.5), top: b.max.y };
+    // Xona yaxlit "quti" bo'lsa, ichidagi odamchalar ko'rinishi uchun yarim shaffof qilinadi.
+    if (s.y > 0.5) {
+      o.traverse((m) => {
+        if (!m.isMesh) return;
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        m.material = mats.map((mat) => {
+          const x = mat.clone();
+          x.transparent = true;
+          x.opacity = Math.min(x.opacity ?? 1, 0.28);
+          x.depthWrite = false;
+          return x;
+        });
+        if (m.material.length === 1) m.material = m.material[0];
+        m.renderOrder = 1;
+      });
+    }
   });
 
   const floorRooms = clinic.rooms.filter((r) => r.floor === floor);
