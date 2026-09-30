@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ClinicScene } from './scene/ClinicScene.js';
-import { DemoSource, LiveSource, logout } from './data-source.js';
-import { Sidebar } from './components/Sidebar.jsx';
-import { StaffCard } from './components/StaffCard.jsx';
+import { useClinicData } from './state/useClinicData.js';
+import { logout } from './data-source.js';
+import { AppLayout } from './layout/AppLayout.jsx';
+import { TopBar } from './layout/TopBar.jsx';
+import { SidePanel } from './layout/SidePanel.jsx';
+import { BuildingScene } from './scene/BuildingScene.jsx';
+import { FloorSelector } from './components/FloorSelector.jsx';
+import { SearchBar } from './components/SearchBar.jsx';
+import { FiltersPanel } from './components/FiltersPanel.jsx';
+import { EmployeeInfoCard } from './components/EmployeeInfoCard.jsx';
+import { StatsStrip } from './components/StatsStrip.jsx';
+import { ViewHeader } from './components/ViewHeader.jsx';
 import { TodayPanel } from './components/TodayPanel.jsx';
 import { Login } from './components/Login.jsx';
-import { formatClock, locationText, searchStaff } from './format.js';
-
-const isDemo = () => __DEMO__ || new URLSearchParams(location.search).has('demo');
+import { exportExcel } from './excel.js';
 
 function modelWarnings(info) {
   if (!info || info.source !== 'model') return [];
@@ -24,107 +30,70 @@ function modelWarnings(info) {
   return out;
 }
 
-// Ekranning panellar bilan yopilgan qismlari: kamera markazni shunga qarab suradi.
+// Sahnaning panellar bilan yopilgan qismlari: kamera bo'sh joy markaziga qaraydi.
 function measureInsets(stage) {
   const box = stage.getBoundingClientRect();
-  const mobile = box.width <= 820;
   const rect = (sel) => stage.querySelector(sel)?.getBoundingClientRect() ?? null;
-  const side = rect('.sidebar');
-  const card = rect('.card');
+  const card = rect('.emp-card');
+  const selector = rect('.floor-selector');
+  const strip = rect('.stats-strip');
   const today = rect('.today');
-  const insets = { left: 0, right: 0, top: 0, bottom: 0 };
-  if (!mobile && side) insets.left = side.right - box.left;
-  if (!mobile && card) insets.right = box.right - card.left;
-  const bottoms = [today, mobile ? card : null].filter(Boolean).map((r) => box.bottom - r.top);
-  if (bottoms.length) insets.bottom = Math.max(...bottoms);
-  return insets;
+  const header = rect('.view-header');
+  return {
+    left: card ? card.right - box.left + 8 : 0,
+    right: selector ? box.right - selector.left + 8 : 0,
+    top: header ? Math.min(header.bottom - box.top, 140) * 0.6 : 0,
+    bottom: Math.max(strip ? box.bottom - strip.top + 8 : 0, today ? box.bottom - today.top + 8 : 0),
+  };
 }
 
 export default function App() {
-  const [source, setSource] = useState(() => (isDemo() ? new DemoSource() : new LiveSource()));
-  const [phase, setPhase] = useState('loading');
-  const [config, setConfig] = useState(null);
-  const [snapshot, setSnapshot] = useState(null);
-  const [today, setToday] = useState(null);
-  const [conn, setConn] = useState({ state: 'ulanmoqda' });
+  const data = useClinicData();
+  const { source, phase, config, snapshot, today, conn, staffById, roomById, stateById, summaryById } = data;
+  const [view, setView] = useState({ mode: 'overview', floor: null });
   const [selectedId, setSelectedId] = useState(null);
-  const [floor, setFloor] = useState('all');
   const [roleFilter, setRoleFilter] = useState(() => new Set());
-  const [todayOpen, setTodayOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [panel, setPanel] = useState(null);
+  const [hoverFloor, setHoverFloor] = useState(null);
   const [modelInfo, setModelInfo] = useState(null);
-  const [query, setQuery] = useState('');
-  const [suggestOpen, setSuggestOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  const sceneBox = useRef(null);
-  const scene = useRef(null);
+  const [insets, setInsets] = useState(null);
+  const sceneRef = useRef(null);
   const stageRef = useRef(null);
 
-  const say = useCallback((text) => {
-    setToast({ text, id: Math.random() });
-  }, []);
+  const say = useCallback((text) => setToast({ text, id: Math.random() }), []);
   useEffect(() => {
     if (!toast) return undefined;
     const t = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(t);
   }, [toast]);
 
-  useEffect(() => {
-    source.start({
-      onConfig: (cfg) => {
-        setConfig(cfg);
-        setPhase('ready');
-      },
-      onSnapshot: setSnapshot,
-      onToday: setToday,
-      onStatus: (state, detail) => setConn({ state, detail }),
-      onAuthRequired: () => setPhase('login'),
-    });
-    return () => source.stop();
-  }, [source]);
-
-  // 3D sahna config kelgandan keyin bir marta yaratiladi.
-  useEffect(() => {
-    if (!config || !sceneBox.current) return undefined;
-    const s = new ClinicScene(sceneBox.current, {
-      onSelect: (id) => setSelectedId(id),
-      onModelInfo: setModelInfo,
-    });
-    if (stageRef.current) s.setInsets(measureInsets(stageRef.current));
-    s.setConfig(config);
-    scene.current = s;
-    window.__klinika = s;
-    return () => {
-      s.dispose();
-      scene.current = null;
-    };
-  }, [config]);
-
-  useEffect(() => { if (snapshot) scene.current?.update(snapshot); }, [snapshot]);
-
-  // Kamera panellar ostida qolgan joyni hisobga olsin (kartochka, jadval, chap panel).
   useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage) return undefined;
-    const measure = () => scene.current?.setInsets(measureInsets(stage));
+    const measure = () => setInsets((prev) => {
+      const next = measureInsets(stage);
+      return prev && Object.keys(next).every((k) => Math.round(prev[k]) === Math.round(next[k])) ? prev : next;
+    });
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(stage);
+    const card = stage.querySelector('.emp-card');
+    if (card) ro.observe(card);
     return () => ro.disconnect();
-  }, [config, selectedId, todayOpen]);
-  useEffect(() => { scene.current?.setSelected(selectedId); }, [selectedId, config]);
-  useEffect(() => { scene.current?.setRoleFilter(roleFilter); }, [roleFilter, config]);
+  }, [config, selectedId, panel]);
 
-  const staffById = useMemo(() => new Map((config?.staff ?? []).map((s) => [s.id, s])), [config]);
-  const roomById = useMemo(() => new Map((config?.rooms ?? []).map((r) => [r.id, r])), [config]);
-  const stateById = useMemo(() => new Map((snapshot?.staff ?? []).map((s) => [s.id, s])), [snapshot]);
-  const summaryById = useMemo(() => new Map((today?.rows ?? []).map((r) => [r.id, r])), [today]);
-  const suggestions = useMemo(() => (config ? searchStaff(config.staff, query).slice(0, 6) : []), [config, query]);
+  const counts = useMemo(() => {
+    const m = new Map();
+    for (const st of snapshot?.staff ?? []) {
+      if (!st.present) continue;
+      if (roleFilter.size && !roleFilter.has(staffById.get(st.id)?.role)) continue;
+      m.set(st.floor, (m.get(st.floor) || 0) + 1);
+    }
+    return m;
+  }, [snapshot, roleFilter, staffById]);
 
-  const chooseFloor = (f) => {
-    setFloor(f);
-    scene.current?.setFloor(f);
-  };
+  const changeView = (mode, floor = null) => sceneRef.current?.setView(mode, floor);
 
   const focus = (id) => {
     const st = stateById.get(id);
@@ -133,9 +102,8 @@ export default function App() {
       say(`${s?.name ?? 'Xodim'} hozir binoda emas.`);
       return;
     }
-    const f = scene.current?.focusStaff(id);
-    if (f) setFloor(f);
-    if (st.private) say(`${s.name}: ${st.floor}-qavat, maxfiy zonada.`);
+    sceneRef.current?.focusStaff(id);
+    if (st.private) say(`${s.name}: ${st.floor}-qavat, maxfiy zonada (aniq xona ko'rsatilmaydi).`);
   };
 
   const select = (id, { fly = false } = {}) => {
@@ -143,17 +111,21 @@ export default function App() {
     if (id && fly) focus(id);
   };
 
-  const submitSearch = (e) => {
-    e.preventDefault();
-    const found = suggestions[0];
-    if (!found) {
-      if (query.trim()) say('Hech kim topilmadi.');
-      return;
+  const onNav = async (id) => {
+    if (id === 'bino') {
+      setPanel(null);
+      changeView('overview');
+    } else if (id === 'xodimlar') setPanel(panel === 'table' ? null : 'table');
+    else if (id === 'faollik') setPanel(panel === 'timeline' ? null : 'timeline');
+    else if (id === 'hisobot') {
+      if (!today) return;
+      say('Excel hisobot tayyorlanmoqda…');
+      try {
+        await exportExcel({ config, today, source });
+      } catch (err) {
+        say(`Excel faylni yaratib bo'lmadi: ${err.message || err}`);
+      }
     }
-    select(found.id, { fly: true });
-    setSuggestOpen(false);
-    setQuery('');
-    document.activeElement?.blur();
   };
 
   const toggleRole = (r) => setRoleFilter((prev) => {
@@ -163,17 +135,7 @@ export default function App() {
     return next;
   });
 
-  const changeSpeed = async (v) => {
-    try {
-      await source.setSpeed(Number(v));
-    } catch (err) {
-      say(`Tezlikni o'zgartirib bo'lmadi: ${err.message}`);
-    }
-  };
-
-  if (phase === 'login') {
-    return <Login onDone={() => { setPhase('loading'); setSource(new LiveSource()); }} />;
-  }
+  if (phase === 'login') return <Login onDone={data.relogin} />;
   if (phase === 'loading' || !config) {
     return (
       <div className="splash">
@@ -186,89 +148,71 @@ export default function App() {
   const selected = selectedId ? staffById.get(selectedId) : null;
   const warnings = [...(config.warnings ?? []), ...modelWarnings(modelInfo)];
   const modelNote = modelInfo?.source === 'model'
-    ? `3D model: ${modelInfo.floors.filter((f) => f.ok).map((f) => `${f.floor}`).join(', ')}-qavat 3ds Max faylidan`
-    : '3D model: avtomatik chizma (3ds Max fayllari hali qo\'yilmagan)';
+    ? `3D model: ${modelInfo.floors.filter((f) => f.ok).map((f) => f.floor).join(', ')}-qavat 3ds Max faylidan`
+    : '3D model: vaqtincha bloklar (3ds Max fayllari hali qo\'yilmagan)';
+  const activeNav = panel === 'table' ? 'xodimlar' : panel === 'timeline' ? 'faollik' : 'bino';
 
   return (
-    <div className={`app ${todayOpen ? 'with-today' : ''} ${selected ? 'with-card' : ''}`}>
-      <header className="topbar">
-        <button className="icon-btn only-mobile" onClick={() => setSidebarOpen((v) => !v)} aria-label="Filtr">☰</button>
-        <div className="brand">
-          <div className="brand-mark">+</div>
-          <div>
-            <div className="brand-name">Klinika 3D</div>
-            <div className="brand-sub">
-              <span className={`conn ${conn.state}`} title={conn.state} />
-              {snapshot ? formatClock(snapshot.t) : '--:--'}
-              {snapshot?.mode === 'simulyatsiya' && <span className="badge">{snapshot.demoDay ? 'namuna kun' : 'simulyatsiya'}</span>}
-              {config.demo && <span className="badge alt">telefon namunasi</span>}
-            </div>
-          </div>
-        </div>
-
-        <form className="search" onSubmit={submitSearch} role="search">
-          <input
-            type="search"
-            placeholder="Kim qayerda? Masalan: Dilnoza"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setSuggestOpen(true); }}
-            onFocus={() => setSuggestOpen(true)}
-            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
-            aria-label="Xodimni qidirish"
-          />
-          {suggestOpen && suggestions.length > 0 && (
-            <ul className="suggest">
-              {suggestions.map((s) => (
-                <li key={s.id}>
-                  <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { select(s.id, { fly: true }); setSuggestOpen(false); setQuery(''); }}>
-                    <span className="role-dot" style={{ background: config.roles[s.role]?.color }} />
-                    <span className="sg-name">{s.name}</span>
-                    <span className="muted small">{locationText(stateById.get(s.id), roomById)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+    <AppLayout
+      side={(
+        <SidePanel
+          active={activeNav}
+          onNav={onNav}
+          footer={(
+            <>
+              {config.demo && <div className="side-note">Telefon/namuna versiyasi: ma'lumotlar soxta</div>}
+              <div className="side-note muted">{modelNote}</div>
+            </>
           )}
-        </form>
-
-        <div className="floor-switch" role="group" aria-label="Qavat">
-          <button className={floor === 'all' ? 'on' : ''} onClick={() => chooseFloor('all')}>Hammasi</button>
-          {config.floors.map((f) => (
-            <button key={f} className={floor === f ? 'on' : ''} onClick={() => chooseFloor(f)}>{f}</button>
-          ))}
-        </div>
-
-        <div className="top-actions">
-          {config.speeds?.length > 0 && snapshot && (
-            <select value={snapshot.speed} onChange={(e) => changeSpeed(e.target.value)} aria-label="Simulyatsiya tezligi" title="Simulyatsiya tezligi">
-              {config.speeds.map((v) => <option key={v} value={v}>{v}× tezlik</option>)}
-            </select>
+        >
+          <FiltersPanel config={config} snapshot={snapshot} roleFilter={roleFilter} onToggle={toggleRole} onClear={() => setRoleFilter(new Set())} />
+          {warnings.length > 0 && (
+            <details className="warnings">
+              <summary>⚠ Ogohlantirishlar ({warnings.length})</summary>
+              <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+            </details>
           )}
-          <button className={`btn ${todayOpen ? 'primary' : ''}`} onClick={() => setTodayOpen((v) => !v)}>📊 Bugun</button>
-          {source.kind === 'live' && (
-            <button className="icon-btn" title="Chiqish" aria-label="Chiqish" onClick={async () => { await logout(); location.reload(); }}>⎋</button>
+        </SidePanel>
+      )}
+      top={(
+        <TopBar
+          search={(
+            <SearchBar
+              staff={config.staff}
+              roles={config.roles}
+              stateById={stateById}
+              roomById={roomById}
+              onPick={(id) => select(id, { fly: true })}
+              onNotFound={() => say('Hech kim topilmadi.')}
+            />
           )}
-        </div>
-      </header>
-
-      <main className="stage" ref={stageRef}>
-        <div className="scene" ref={sceneBox} />
-        <div className="model-note muted small">{modelNote}</div>
-        {conn.state === 'uzildi' && <div className="banner">Server bilan aloqa uzildi, qayta ulanmoqda…</div>}
-        <Sidebar
+          snapshot={snapshot}
+          speeds={config.speeds}
+          onSpeed={(v) => source.setSpeed(v).catch((err) => say(`Tezlikni o'zgartirib bo'lmadi: ${err.message}`))}
+          conn={conn}
+          isLive={source.kind === 'live'}
+          onLogout={async () => { await logout(); location.reload(); }}
+        />
+      )}
+    >
+      <main className={`stage mode-${view.mode}`} ref={stageRef}>
+        <BuildingScene
+          ref={sceneRef}
           config={config}
           snapshot={snapshot}
+          selectedId={selectedId}
           roleFilter={roleFilter}
-          onToggleRole={toggleRole}
-          onClearRoles={() => setRoleFilter(new Set())}
-          floor={floor}
-          onFloor={chooseFloor}
-          warnings={warnings}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          insets={insets}
+          onSelect={(id) => select(id)}
+          onViewChange={setView}
+          onModelInfo={setModelInfo}
+          onHoverFloor={setHoverFloor}
         />
+        <ViewHeader view={view} hoverFloor={hoverFloor} config={config} snapshot={snapshot} onOverview={() => changeView('overview')} />
+        <FloorSelector floors={config.floors} view={view} counts={counts} onChange={changeView} />
+        {conn.state === 'uzildi' && <div className="banner">Server bilan aloqa uzildi, qayta ulanmoqda…</div>}
         {selected && (
-          <StaffCard
+          <EmployeeInfoCard
             key={selected.id}
             staff={selected}
             state={stateById.get(selected.id)}
@@ -281,20 +225,31 @@ export default function App() {
             onFocus={() => focus(selected.id)}
           />
         )}
-        {todayOpen && (
+        {panel ? (
           <TodayPanel
+            key={panel}
+            initialTab={panel}
             config={config}
             today={today}
             roleFilter={roleFilter}
             source={source}
             selectedId={selectedId}
             onSelect={(id) => select(id, { fly: true })}
-            onClose={() => setTodayOpen(false)}
+            onClose={() => setPanel(null)}
+          />
+        ) : (
+          <StatsStrip
+            config={config}
+            snapshot={snapshot}
+            today={today}
+            roleFilter={roleFilter}
+            onFloor={(f) => changeView('floor', f)}
+            onSelect={(id) => select(id, { fly: true })}
+            onOpenTable={() => setPanel('table')}
           />
         )}
         {toast && <div className="toast" key={toast.id}>{toast.text}</div>}
       </main>
-    </div>
+    </AppLayout>
   );
 }
-

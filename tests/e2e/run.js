@@ -53,7 +53,16 @@ async function main() {
   const browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 
   console.log('\nKompyuter ekrani (server bilan):');
-  const { page, errors } = await newPage(browser, { width: 1440, height: 900 });
+  const { page, errors } = await newPage(browser, { width: 1600, height: 950 });
+  const view = () => page.evaluate(() => ({ ...window.__klinika.view }));
+  const vis = () => page.evaluate(() => {
+    const s = window.__klinika;
+    return { ext: +s.exteriorVis.toFixed(2), floors: Object.fromEntries([...s.floors].map(([f, st]) => [f, +st.visTarget.toFixed(2)])) };
+  });
+  const settle = () => page.waitForFunction(() => {
+    const s = window.__klinika;
+    return !s.flight && Math.abs(s.exteriorVis - s.exteriorTarget) < 0.01 && [...s.floors.values()].every((st) => Math.abs(st.vis - st.visTarget) < 0.01);
+  }, null, { timeout: 20000 });
 
   await step('Parolsiz kirish oynasi chiqadi, noto\'g\'ri parol rad etiladi', async () => {
     await page.goto(base);
@@ -64,73 +73,133 @@ async function main() {
     await page.screenshot({ path: join(SHOTS, '01-kirish.png') });
   });
 
-  await step('To\'g\'ri parol bilan 3D bino va odamchalar chiqadi', async () => {
+  await step('Boshlang\'ich ekran: binoning tashqi umumiy ko\'rinishi', async () => {
     await page.fill('.login input', 'test123');
     await page.click('.login button');
     await page.waitForSelector('.scene canvas');
-    await waitPeople(page, 3);
-    await page.waitForTimeout(1500);
-    const floors = await page.$$eval('.room-label.floor-title', (els) => els.map((e) => e.textContent));
-    assert.deepEqual(floors.sort(), ['1-qavat', '2-qavat', '3-qavat', '4-qavat']);
-    await page.screenshot({ path: join(SHOTS, '02-bino.png') });
-    const pixels = await page.evaluate(() => {
+    await page.waitForSelector('.scene-label.floor-chip');
+    await settle();
+    assert.equal((await view()).mode, 'overview');
+    assert.equal(await page.textContent('.view-header h2'), 'Klinika binosi');
+    const chips = await page.$$eval('.scene-label.floor-chip', (els) => els.map((e) => e.textContent));
+    assert.equal(chips.length, 4);
+    assert.ok(chips.every((c) => /\dF\d+ kishi/.test(c)), chips.join(','));
+    const colors = await page.evaluate(() => {
       const c = document.querySelector('.scene canvas');
       const gl = c.getContext('webgl2') || c.getContext('webgl');
-      const colors = new Set();
+      const set = new Set();
       const px = new Uint8Array(4);
       for (let i = 1; i < 20; i++) for (let j = 1; j < 20; j++) {
         gl.readPixels(Math.floor((c.width * i) / 20), Math.floor((c.height * j) / 20), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-        colors.add(px.slice(0, 3).join(','));
+        set.add(px.slice(0, 3).join(','));
       }
-      return colors.size;
+      return set.size;
     });
-    assert.ok(pixels > 5, `3D rasm chizilmagan (${pixels} xil rang)`);
+    assert.ok(colors > 10, `3D rasm chizilmagan (${colors} xil rang)`);
+    await page.screenshot({ path: join(SHOTS, '02-bino-tashqi.png') });
   });
 
-  await step('Qidiruv: "Dilnoza qayerda?" -> kartochka ochiladi', async () => {
-    await page.fill('.search input', 'Dilnoza qayerda?');
-    await page.waitForSelector('.suggest li');
-    await page.press('.search input', 'Enter');
-    await page.waitForSelector('.card h2');
-    assert.equal(await page.textContent('.card h2'), 'Dilnoza Karimova');
-    const facts = await page.textContent('.card .facts');
-    assert.ok(/Joylashuv/.test(facts));
-    await page.waitForSelector('.card .timeline, .card p.muted');
-    await page.waitForTimeout(1200);
-    await page.screenshot({ path: join(SHOTS, '03-qidiruv-kartochka.png') });
-  });
-
-  await step('Odamchani bosganda uning kartochkasi ochiladi', async () => {
-    await page.click('.card .icon-btn');
-    await page.waitForSelector('.card', { state: 'detached' });
-    const label = page.locator('.person-label:visible').first();
-    const name = await label.locator('.nm').textContent();
-    await label.click();
-    await page.waitForSelector('.card h2');
-    const full = await page.textContent('.card h2');
-    assert.ok(full.startsWith(name.replace(/ .\.$/, '').split(' ')[0]), `${name} / ${full}`);
-    await page.click('.card .icon-btn');
-  });
-
-  await step('Lavozim filtri: faqat laborantlar ko\'rinadi', async () => {
-    await page.click('.chip:has-text("Laborant")');
+  await step('Binoni (3-qavat qismini) bosganda o\'sha qavat ichiga kiriladi', async () => {
+    const pt = await page.evaluate(() => {
+      const s = window.__klinika;
+      const band = s.exterior.bands.get(3);
+      const mesh = band.children[0];
+      mesh.geometry.computeBoundingBox();
+      const bb = mesh.geometry.boundingBox;
+      // Old fasad yuzasining o'rtasi (kameraga qaragan tomon).
+      const p = mesh.localToWorld(mesh.position.clone().set((bb.min.x + bb.max.x) / 2 + (bb.max.x - bb.min.x) * 0.15, 0, bb.max.z));
+      p.project(s.camera);
+      const r = s.renderer.domElement.getBoundingClientRect();
+      return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
+    });
+    await page.mouse.move(pt.x, pt.y);
     await page.waitForTimeout(300);
-    const visible = await page.$$eval('.person-label', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.style.getPropertyValue('--role')));
-    assert.ok(visible.length <= 2, `ko'rinayotganlar: ${visible.length}`);
-    assert.ok(visible.every((c) => c.trim() === '#8a63d2'));
-    await page.screenshot({ path: join(SHOTS, '04-filtr.png') });
-    await page.click('.side-head .link');
+    assert.match(await page.textContent('.hint'), /3-qavatga kirish uchun bosing/);
+    await page.mouse.click(pt.x, pt.y);
+    await settle();
+    assert.deepEqual(await view(), { mode: 'floor', floor: 3 });
+    assert.equal(await page.textContent('.view-header h2'), '3-qavat');
+    const v = await vis();
+    assert.equal(v.ext, 0);
+    assert.deepEqual(v.floors, { 1: 0, 2: 0, 3: 1, 4: 0 });
+    await page.screenshot({ path: join(SHOTS, '03-qavat-3.png') });
   });
 
-  await step('Qavat tanlash: faqat 2-qavat ko\'rinadi', async () => {
-    await page.click('.floor-switch button:has-text("2")');
-    await page.waitForTimeout(1200);
-    const titles = await page.$$eval('.room-label.floor-title', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.textContent));
-    assert.deepEqual(titles, ['2-qavat']);
-    const rooms = await page.$$eval('.room-label:not(.floor-title)', (els) => els.filter((e) => e.style.display !== 'none' && !e.classList.contains('compact')).map((e) => e.textContent));
-    assert.ok(rooms.includes('Operatsion xona'), rooms.join(','));
-    await page.screenshot({ path: join(SHOTS, '05-qavat-2.png') });
-    await page.click('.floor-switch button:has-text("Hammasi")');
+  await step('O\'ngdagi tanlagich: 1F bosilsa faqat 1-qavat ko\'rinadi', async () => {
+    await page.click('.fs-btn[aria-label="1-qavat"]');
+    await settle();
+    assert.deepEqual(await view(), { mode: 'floor', floor: 1 });
+    assert.ok(await page.$('.fs-btn[aria-label="1-qavat"].on'));
+    assert.deepEqual((await vis()).floors, { 1: 1, 2: 0, 3: 0, 4: 0 });
+    const rooms = await page.$$eval('.scene-label.room', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.textContent));
+    assert.ok(rooms.includes('Qabulxona'), rooms.join(','));
+    assert.ok(!rooms.includes('Operatsion xona'), 'boshqa qavat xonasi ko\'rinmasligi kerak');
+    await page.screenshot({ path: join(SHOTS, '04-qavat-1.png') });
+  });
+
+  await step('"Barchasi" va "Bino" tugmalari ishlaydi', async () => {
+    await page.click('.fs-btn[aria-label="Barchasi"]');
+    await settle();
+    assert.equal((await view()).mode, 'all');
+    assert.deepEqual((await vis()).floors, { 1: 1, 2: 1, 3: 1, 4: 1 });
+    await page.screenshot({ path: join(SHOTS, '05-barchasi.png') });
+    await page.click('.fs-btn[aria-label="Bino"]');
+    await settle();
+    assert.equal((await view()).mode, 'overview');
+    assert.equal((await vis()).ext, 1);
+  });
+
+  await step('Qidiruv: "Dilnoza qayerda?" -> panel ochiladi, kamera uning qavatiga tushadi', async () => {
+    await page.fill('.searchbar input', 'Dilnoza qayerda?');
+    await page.waitForSelector('.suggest li');
+    await page.press('.searchbar input', 'Enter');
+    await page.waitForSelector('.emp-card h2');
+    assert.equal(await page.textContent('.emp-card h2'), 'Dilnoza Karimova');
+    await settle();
+    const st = await page.evaluate(() => fetch('/api/snapshot').then((r) => r.json()).then((s) => s.staff.find((x) => x.id === 'dilnoza-karimova')));
+    assert.deepEqual(await view(), { mode: 'floor', floor: st.floor });
+    const card = await page.textContent('.emp-card');
+    for (const word of ['Joylashuv', 'Qavat', 'Xona', 'Smena', 'Bugungi faollik', 'Shu joyda']) assert.ok(card.includes(word), word);
+    await page.waitForSelector('.emp-card .timeline, .emp-card p.muted');
+    await page.screenshot({ path: join(SHOTS, '06-qidiruv-panel.png') });
+  });
+
+  await step('Odamchani bosganda panel o\'sha xodimga almashadi, yopish tugmasi ishlaydi', async () => {
+    const other = page.locator('.person-tag:visible:not(.selected)').first();
+    const short = (await other.locator('.nm').textContent()).split(' ')[0];
+    await other.click();
+    await page.waitForFunction((n) => document.querySelector('.emp-card h2')?.textContent.startsWith(n), short);
+    assert.ok(await page.$('.person-tag.selected'));
+    await page.click('.emp-card .hero-btn[aria-label="Yopish"]');
+    await page.waitForSelector('.emp-card', { state: 'detached' });
+  });
+
+  await step('Odamchaning o\'zini (3D shaklini) bosish ham ishlaydi', async () => {
+    const pt = await page.evaluate(() => {
+      const s = window.__klinika;
+      const p = [...s.people.values()].find((x) => x.ch.root.visible);
+      const v = p.ch.root.position.clone();
+      v.y += 0.9;
+      v.project(s.camera);
+      const r = s.renderer.domElement.getBoundingClientRect();
+      return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height, name: p.staff.name };
+    });
+    await page.mouse.click(pt.x, pt.y);
+    await page.waitForSelector('.emp-card h2');
+    assert.equal(await page.textContent('.emp-card h2'), pt.name);
+    await page.click('.emp-card .hero-btn[aria-label="Yopish"]');
+  });
+
+  await step('Lavozim filtri: faqat shifokorlar ko\'rinadi', async () => {
+    await page.click('.fs-btn[aria-label="Barchasi"]');
+    await settle();
+    await page.click('.role-item:has-text("Shifokor")');
+    await page.waitForFunction(() => [...window.__klinika.people.values()].filter((p) => p.ch.root.visible).every((p) => p.staff.role === 'Shifokor'), null, { timeout: 15000 });
+    const shown = await page.evaluate(() => [...window.__klinika.people.values()].filter((p) => p.ch.root.visible).map((p) => p.staff.role));
+    assert.ok(shown.length >= 1 && shown.every((r) => r === 'Shifokor'), shown.join(','));
+    await page.screenshot({ path: join(SHOTS, '07-filtr.png') });
+    await page.click('.side-title .link');
+    await page.waitForFunction(() => document.querySelectorAll('.role-item.on').length === 0);
   });
 
   await step('Maxfiy zona: aniq xona nomi hech qayerda yo\'q', async () => {
@@ -139,23 +208,23 @@ async function main() {
     assert.ok(!JSON.stringify(snap).includes('Kiyinish'));
   });
 
-  await step('"Bugun" jadvali faollik bo\'yicha saralangan', async () => {
-    await page.click('.top-actions button:has-text("Bugun")');
+  await step('"Xodimlar" bo\'limi: jadval faollik bo\'yicha saralangan', async () => {
+    await page.click('.nav-item:has-text("Xodimlar")');
     await page.waitForSelector('.today tbody tr');
     const vals = await page.$$eval('.today tbody tr td:nth-child(4) b', (els) => els.map((e) => parseInt(e.textContent, 10)).filter((n) => !Number.isNaN(n)));
     assert.ok(vals.length >= 5, `qatorlar: ${vals.length}`);
     for (let i = 1; i < vals.length; i++) assert.ok(vals[i - 1] >= vals[i], vals.join(','));
-    await page.screenshot({ path: join(SHOTS, '06-bugun.png') });
+    await page.screenshot({ path: join(SHOTS, '08-jadval.png') });
   });
 
-  await step('Kunlik tasma barcha xodimlar uchun chiziladi', async () => {
-    await page.click('.tabs button:has-text("Kunlik tasma")');
+  await step('"Faollik" bo\'limi: kunlik tasmalar chiziladi', async () => {
+    await page.click('.nav-item:has-text("Faollik")');
     await page.waitForSelector('.tl-row .tl-seg');
-    await page.screenshot({ path: join(SHOTS, '07-tasma.png') });
+    await page.screenshot({ path: join(SHOTS, '09-tasma.png') });
   });
 
   await step('Excel hisobot yuklanadi va ichida ma\'lumot bor', async () => {
-    const [download] = await Promise.all([page.waitForEvent('download'), page.click('.today-head button:has-text("Excel")')]);
+    const [download] = await Promise.all([page.waitForEvent('download'), page.click('.nav-item:has-text("Hisobot")')]);
     const file = join(SHOTS, download.suggestedFilename());
     await download.saveAs(file);
     const { default: ExcelJS } = await import('exceljs');
@@ -165,24 +234,25 @@ async function main() {
     assert.equal(sheet.getRow(1).getCell(1).value, 'Xodim');
     assert.equal(sheet.rowCount, app.clinic.staff.length + 1);
     assert.ok(wb.getWorksheet('Kunlik tasma').rowCount > 20);
-    const all = JSON.stringify(wb.getWorksheet('Kunlik tasma').getSheetValues());
-    assert.ok(!all.includes('Hojatxona'));
+    assert.ok(!JSON.stringify(wb.getWorksheet('Kunlik tasma').getSheetValues()).includes('Hojatxona'));
+    await page.click('.today-head .icon-btn');
   });
 
   await step('Simulyatsiya tezligini o\'zgartirish ishlaydi', async () => {
     const t1 = await page.evaluate(() => fetch('/api/snapshot').then((r) => r.json()).then((s) => s.t));
-    await page.selectOption('.top-actions select', '60');
+    await page.selectOption('.speed', '60');
     await page.waitForTimeout(2200);
     const t2 = await page.evaluate(() => fetch('/api/snapshot').then((r) => r.json()).then((s) => s.t));
     assert.ok(t2 - t1 > 60_000, `vaqt ${Math.round((t2 - t1) / 1000)} s o'tdi`);
-    await page.selectOption('.top-actions select', '1');
+    await page.selectOption('.speed', '1');
   });
 
   await step('Brauzer konsolida xato yo\'q', async () => {
     assert.deepEqual(errors.filter((e) => !/401|Unauthorized/.test(e)), []);
   });
 
-  console.log('\nTelefon ekrani (namuna versiya, serversiz):');
+  await page.context().close();
+  console.log('\nNamuna versiya (serversiz, telefon uchun ham):');
   const demoDir = join(ROOT, 'dist-demo');
   let demoServer;
   if (existsSync(join(demoDir, 'index.html'))) {
@@ -196,33 +266,34 @@ async function main() {
     });
     await new Promise((r) => demoServer.listen(0, r));
     const demoBase = `http://127.0.0.1:${demoServer.address().port}`;
-    const m = await newPage(browser, { width: 390, height: 844 });
-    await step('Telefonda namuna parolsiz ochiladi, odamchalar yuradi', async () => {
+    const m = await newPage(browser, { width: 1366, height: 768 });
+    await step('Namuna parolsiz ochiladi (noutbuk ekrani)', async () => {
       await m.page.goto(demoBase);
-      await waitPeople(m.page, 3);
+      await m.page.waitForSelector('.scene-label.floor-chip');
       await m.page.waitForTimeout(1500);
       const overflow = await m.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       assert.equal(overflow, false, 'gorizontal siljish bor');
-      await m.page.screenshot({ path: join(SHOTS, '10-telefon-bino.png') });
+      await m.page.screenshot({ path: join(SHOTS, '10-namuna-noutbuk.png') });
     });
-    await step('Telefonda qidiruv va kartochka', async () => {
-      await m.page.fill('.search input', 'aziz');
-      await m.page.press('.search input', 'Enter');
-      await m.page.waitForSelector('.card h2');
-      await m.page.waitForTimeout(1200);
-      await m.page.screenshot({ path: join(SHOTS, '11-telefon-kartochka.png') });
-      await m.page.click('.card .icon-btn');
+    await step('Namunada qidiruv va panel', async () => {
+      await m.page.fill('.searchbar input', 'aziz');
+      await m.page.press('.searchbar input', 'Enter');
+      await m.page.waitForSelector('.emp-card h2');
+      await m.page.waitForTimeout(2500);
+      await m.page.screenshot({ path: join(SHOTS, '11-namuna-panel.png') });
     });
-    await step('Telefonda filtr menyusi va "Bugun" jadvali', async () => {
-      await m.page.click('.topbar .only-mobile');
-      await m.page.waitForTimeout(400);
-      await m.page.screenshot({ path: join(SHOTS, '12-telefon-menyu.png') });
-      await m.page.click('.sidebar .only-mobile');
-      await m.page.click('.top-actions button:has-text("Bugun")');
-      await m.page.waitForSelector('.today tbody tr');
-      await m.page.screenshot({ path: join(SHOTS, '13-telefon-bugun.png') });
+    await m.ctx.close();
+    const t = await newPage(browser, { width: 390, height: 844 });
+    await step('Telefonda ham ochiladi (asosiy maqsad kompyuter)', async () => {
+      await t.page.goto(demoBase);
+      await t.page.waitForSelector('.scene-label.floor-chip');
+      await t.page.waitForTimeout(1200);
+      const overflow = await t.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      assert.equal(overflow, false, 'gorizontal siljish bor');
+      await t.page.screenshot({ path: join(SHOTS, '12-telefon.png') });
     });
-    await step('Telefon konsolida xato yo\'q', async () => assert.deepEqual(m.errors, []));
+    await step('Namuna konsolida xato yo\'q', async () => assert.deepEqual([...m.errors, ...t.errors], []));
+    await t.ctx.close();
   } else {
     console.log('  (dist-demo yo\'q, "npm run build:demo" qiling)');
   }
@@ -244,13 +315,13 @@ async function main() {
     await g.page.goto(base2);
     await g.page.fill('.login input', 'test123');
     await g.page.click('.login button');
-    await g.page.waitForFunction(() => /2-qavat 3ds Max faylidan/.test(document.querySelector('.model-note')?.textContent || ''), null, { timeout: 15000 });
-    await g.page.click('.floor-switch button:has-text("2")');
-    await g.page.waitForTimeout(1500);
-    const rooms = await g.page.$$eval('.room-label', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.textContent));
+    await g.page.waitForFunction(() => /2-qavat 3ds Max faylidan/.test(document.querySelector('.side-foot')?.textContent || ''), null, { timeout: 40000 });
+    await g.page.click('.fs-btn[aria-label="2-qavat"]');
+    await g.page.waitForTimeout(2500);
+    const rooms = await g.page.$$eval('.scene-label.room', (els) => els.filter((e) => e.style.display !== 'none').map((e) => e.textContent));
     assert.ok(rooms.includes('Operatsion xona'), rooms.join(','));
     const info = await g.page.evaluate(() => {
-      const fl = window.__klinika.layout.floors[2];
+      const fl = window.__klinika.layout[2];
       return { w: fl.rooms.ROOM_2_205_Operatsion.w, stairs: fl.stairs };
     });
     assert.ok(info.w > 4 && info.w < 7, `xona kengligi ${info.w} m (santimetrdan metrga o'tmagan)`);

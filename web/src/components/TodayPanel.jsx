@@ -16,8 +16,8 @@ const COLUMNS = [
 ];
 
 // "Bugun" paneli: barcha xodimlar faollik bo'yicha saralangan jadval va kunlik tasmalar.
-export function TodayPanel({ config, today, roleFilter, source, onSelect, selectedId, onClose }) {
-  const [tab, setTab] = useState('table');
+export function TodayPanel({ config, today, roleFilter, source, onSelect, selectedId, onClose, initialTab = 'table' }) {
+  const [tab, setTab] = useState(initialTab);
   const [sort, setSort] = useState({ key: 'activity', dir: -1 });
   const [timelines, setTimelines] = useState({});
   const [exporting, setExporting] = useState(false);
@@ -72,7 +72,7 @@ export function TodayPanel({ config, today, roleFilter, source, onSelect, select
           <button role="tab" aria-selected={tab === 'timeline'} className={tab === 'timeline' ? 'on' : ''} onClick={() => setTab('timeline')}>Kunlik tasma</button>
         </div>
         <div className="spacer" />
-        <button className="btn" onClick={onExport} disabled={exporting || !today}>{exporting ? 'Tayyorlanmoqda…' : '⬇ Excel'}</button>
+        <button className="btn" onClick={onExport} disabled={exporting || !today}>{exporting ? 'Tayyorlanmoqda…' : 'Excel yuklash'}</button>
         <button className="icon-btn" onClick={onClose} aria-label="Yopish">✕</button>
       </header>
 

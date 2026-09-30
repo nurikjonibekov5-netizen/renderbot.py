@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { guessScale } from '../web/src/scene/building.js';
+import { guessScale } from '../web/src/scene/engine/gltf.js';
 import { autoLayout, doorPoint } from '../shared/layout.js';
 import { clinic } from './helpers.js';
 
