@@ -51,19 +51,25 @@ export function autoLayout(clinic) {
       corridor: corridorRect,
       corridorRoomId: corridor?.id ?? null,
       stairs: { x: x0 + length + STAIRS_W / 2, z: 0 },
-      privatePad: { x: x0 + length + STAIRS_W + 3, z: 0 },
+      privatePad: { x: x0 + length + STAIRS_W + 2, z: 0 },
       bounds: { minX: x0, maxX: x0 + length + STAIRS_W, minZ: -(CORRIDOR_D / 2 + ROOM_D), maxZ: CORRIDOR_D / 2 + ROOM_D },
     };
   }
   return { floors, source: 'auto' };
 }
 
-// Xona eshigi: xona koridorga qaragan tomonidagi nuqta (koridor ichida).
+// Xona eshigi: xonadan koridorga chiqiladigan nuqta (koridor ichida).
+// Koridor qaysi yo'nalishda cho'zilganidan qat'i nazar ishlaydi (3ds Max modellari uchun ham).
 export function doorPoint(floorLayout, roomId) {
   const r = floorLayout.rooms[roomId];
   const c = floorLayout.corridor;
   if (!r) return { x: c.x, z: c.z };
   if (roomId === floorLayout.corridorRoomId) return { x: r.x, z: r.z };
-  const dz = r.side ? r.side * (c.d / 2 - 0.4) : 0;
-  return { x: Math.min(Math.max(r.x, c.x - c.w / 2 + 0.5), c.x + c.w / 2 - 0.5), z: c.z + dz };
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  if (c.w >= c.d) {
+    const s = Math.sign(r.z - c.z) || 1;
+    return { x: clamp(r.x, c.x - c.w / 2 + 0.5, c.x + c.w / 2 - 0.5), z: c.z + s * Math.max(0, c.d / 2 - 0.4) };
+  }
+  const s = Math.sign(r.x - c.x) || 1;
+  return { x: c.x + s * Math.max(0, c.w / 2 - 0.4), z: clamp(r.z, c.z - c.d / 2 + 0.5, c.z + c.d / 2 - 0.5) };
 }
