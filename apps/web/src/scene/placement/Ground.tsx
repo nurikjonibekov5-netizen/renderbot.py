@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
-import { getAppStore, ROAD_STEP } from '../../editor/store.ts';
-import { snap } from '../../lib/geometry.ts';
+import { getAppStore, type Tool } from '../../editor/store.ts';
 import { MAT } from '../environment/palette.ts';
 import { CLICK_TOLERANCE, draftStore, gizmoBusy, placementAllowed, pointerStore } from '../interaction.ts';
-import { snapRoadPoint } from './roadSnap.ts';
+import { snapRectPoint, snapRoadPoint } from './roadSnap.ts';
 
 const GROUND_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
@@ -15,12 +14,15 @@ function groundPoint(e: ThreeEvent<PointerEvent | MouseEvent>): [number, number]
   return e.ray.intersectPlane(GROUND_PLANE, hit) ? [hit.x, hit.z] : null;
 }
 
+/** Tools that draw a rectangle by press–drag–release (video 8–10 s and 15–16 s). */
+export const isRectTool = (t: Tool) => t === 'lot' || t === 'parking' || t === 'footprint';
+
 /**
  * The ground receives every pointer interaction of the build tools.
- * Entity groups stop propagation only in select mode, so tools work on top of buildings too.
+ * Entity groups stop propagation only in select/facade mode, so tools work on top of buildings too.
  */
 export function Ground() {
-  const size = 1200;
+  const size = 1400;
   const handlers = useMemo(() => ({
     onPointerMove(e: ThreeEvent<PointerEvent>) {
       const p = groundPoint(e);
@@ -31,22 +33,31 @@ export function Ground() {
     },
     onPointerDown(e: ThreeEvent<PointerEvent>) {
       const s = getAppStore().getState();
-      if (s.tool !== 'footprint' || e.button !== 0) return;
+      if (!isRectTool(s.tool) || e.button !== 0) return;
       const p = groundPoint(e);
       if (!p) return;
       (e.target as Element | null)?.setPointerCapture?.(e.pointerId);
-      const step = s.snapOn ? ROAD_STEP : 0;
-      draftStore.setState({ footprintStart: step ? [snap(p[0], step), snap(p[1], step)] : p });
+      draftStore.setState({ footprintStart: snapRectPoint(p[0], p[1], s.doc.entities, s.snapOn) });
     },
     onPointerUp(e: ThreeEvent<PointerEvent>) {
       const s = getAppStore().getState();
       const start = draftStore.getState().footprintStart;
-      if (s.tool !== 'footprint' || !start) return;
+      if (!isRectTool(s.tool) || !start) return;
       draftStore.setState({ footprintStart: null });
       const p = groundPoint(e);
       if (!p) return;
-      const end = s.snapOn ? [snap(p[0], ROAD_STEP), snap(p[1], ROAD_STEP)] : p;
-      if (s.addFootprint(start[0], start[1], end[0]!, end[1]!)) s.setTool('select');
+      const end = snapRectPoint(p[0], p[1], s.doc.entities, s.snapOn);
+      if (s.tool === 'footprint') {
+        // video 10–16 s: the new building is selected right away, with its height handle
+        const id = s.addFootprint(start[0], start[1], end[0], end[1]);
+        if (id) {
+          s.setTool('select');
+          s.select(id);
+        }
+      } else {
+        // video 8–10 s: the lot tool stays active so the next block can be drawn at once
+        s.addLot(start[0], start[1], end[0], end[1], s.tool === 'parking' ? 'parking' : 'paved');
+      }
     },
     onClick(e: ThreeEvent<MouseEvent>) {
       if (e.delta > CLICK_TOLERANCE) return; // camera drag
@@ -77,4 +88,3 @@ export function Ground() {
     </mesh>
   );
 }
-

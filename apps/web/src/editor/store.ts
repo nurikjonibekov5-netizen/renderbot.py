@@ -4,6 +4,10 @@ import {
   ROAD_WIDTH,
   createSampleDocument,
   round4,
+  type BuildingMeta,
+  type BuildingStyle,
+  type FaceKey,
+  type LotSurface,
   type SceneDocument,
   type SceneEntity,
 } from '@scene/schema';
@@ -11,9 +15,11 @@ import { addCommand, removeCommand, updateCommand, type Command } from './comman
 import { newId } from './ids.ts';
 import { saveToStorage } from './persist.ts';
 import { catalogById, entityFromCatalog } from '../lib/catalog.ts';
-import { localBounds, placementProblem, snap } from '../lib/geometry.ts';
+import { buildingMeta, isGlb, localBounds, placementProblem, snap } from '../lib/geometry.ts';
+import { markBuilt } from '../scene/interaction.ts';
 
-export type Tool = 'select' | 'road' | 'footprint' | `place:${string}`;
+export type FacadeTool = BuildingStyle | 'storefront';
+export type Tool = 'select' | 'road' | 'lot' | 'parking' | 'footprint' | `facade:${FacadeTool}` | `place:${string}`;
 export type TransformMode = 'translate' | 'rotate' | 'scale';
 
 export const HISTORY_LIMIT = 200;
@@ -40,6 +46,8 @@ export interface EditorState {
   savedAt: number | null;
   toast: Toast | null;
   cameraResetTick: number;
+  /** final city view (video 26–38 s): UI hidden, slow camera drift */
+  presenting: boolean;
 
   execute(cmd: Command | null): boolean;
   undo(): void;
@@ -57,6 +65,9 @@ export interface EditorState {
   placeAsset(assetId: string, x: number, z: number): string | null;
   addRoad(ax: number, az: number, bx: number, bz: number): string | null;
   addFootprint(ax: number, az: number, bx: number, bz: number): string | null;
+  addLot(ax: number, az: number, bx: number, bz: number, surface: LotSurface): string | null;
+  applyFacade(id: string, face: FaceKey | null, style: FacadeTool): boolean;
+  setPresenting(on: boolean): void;
   updateEntity(id: string, change: (e: SceneEntity) => SceneEntity, label?: string): boolean;
   nudgeSelected(dx: number, dz: number): void;
   rotateSelected(deg: number): void;
@@ -92,7 +103,7 @@ export function createEditorStore(initial: SceneDocument = createSampleDocument(
       selectedId: null,
       tool: 'select',
       ghostRotation: 0,
-      gridVisible: true,
+      gridVisible: false,
       snapOn: true,
       transformMode: 'translate',
       past: [],
@@ -101,6 +112,7 @@ export function createEditorStore(initial: SceneDocument = createSampleDocument(
       savedAt: null,
       toast: null,
       cameraResetTick: 0,
+      presenting: false,
 
       execute(cmd) {
         if (!cmd) return false;
@@ -136,7 +148,8 @@ export function createEditorStore(initial: SceneDocument = createSampleDocument(
         set({ tool, ghostRotation: 0, ...(tool === 'select' ? {} : { selectedId: null }) });
       },
       cancel() {
-        if (get().tool !== 'select') set({ tool: 'select', ghostRotation: 0 });
+        if (get().presenting) set({ presenting: false });
+        else if (get().tool !== 'select') set({ tool: 'select', ghostRotation: 0 });
         else set({ selectedId: null });
       },
       rotateGhost() {
@@ -163,7 +176,9 @@ export function createEditorStore(initial: SceneDocument = createSampleDocument(
         const item = catalogById.get(assetId);
         if (!item) return null;
         const id = newId(item.type, idsOf(get().doc));
-        return addChecked(entityFromCatalog(item, id, step(x, MOVE_STEP), step(z, MOVE_STEP), get().ghostRotation), `${item.label} qo'shish`);
+        const added = addChecked(entityFromCatalog(item, id, step(x, MOVE_STEP), step(z, MOVE_STEP), get().ghostRotation), `${item.label} qo'shish`);
+        if (added && item.type === 'building') markBuilt(added);
+        return added;
       },
       addRoad(ax, az, bx, bz) {
         const dx = bx - ax;
@@ -197,7 +212,44 @@ export function createEditorStore(initial: SceneDocument = createSampleDocument(
           scale: [1, 1, 1],
           metadata: { width, depth, floors: 3, storeyHeight: DEFAULT_STOREY, style: 'brick' },
         };
-        return addChecked(entity, "Bino chizish");
+        const id = addChecked(entity, 'Bino chizish');
+        if (id) markBuilt(id);
+        return id;
+      },
+      addLot(ax, az, bx, bz, surface) {
+        const width = round4(Math.abs(bx - ax));
+        const depth = round4(Math.abs(bz - az));
+        if (width < 6 || depth < 6) {
+          get().notify('Uchastka juda kichik (kamida 6×6 m).', 'error');
+          return null;
+        }
+        const entity: SceneEntity = {
+          id: newId('lot', idsOf(get().doc)),
+          type: 'lot',
+          assetId: surface === 'parking' ? 'lot:parking' : 'lot:paved',
+          position: [(ax + bx) / 2, 0, (az + bz) / 2],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+          metadata: { width, depth, surface },
+        };
+        return addChecked(entity, surface === 'parking' ? "Parking qo'shish" : "Uchastka qo'shish");
+      },
+      applyFacade(id, face, style) {
+        const e = get().doc.entities.find((x) => x.id === id);
+        if (!e || e.type !== 'building') return false;
+        if (isGlb(e)) {
+          get().notify("Bu tayyor 3D model: uning fasadini o'zgartirib bo'lmaydi.", 'error');
+          return false;
+        }
+        const m = buildingMeta(e);
+        let next: BuildingMeta;
+        if (style === 'storefront') next = { ...m, ground: m.ground === 'storefront' ? 'same' : 'storefront' };
+        else if (face) next = { ...m, faces: { ...m.faces, [face]: style } };
+        else next = { ...m, style, faces: {} };
+        return get().updateEntity(id, (x) => ({ ...x, metadata: { ...x.metadata, ...next } }), style === 'storefront' ? "Do'kon qavati" : 'Fasad');
+      },
+      setPresenting(on) {
+        set({ presenting: on, ...(on ? { selectedId: null, tool: 'select' as Tool } : {}) });
       },
       updateEntity(id, change, label) {
         const before = get().doc.entities.find((e) => e.id === id);

@@ -3,13 +3,14 @@ import { useThree } from '@react-three/fiber';
 import { useStore } from 'zustand';
 import * as THREE from 'three';
 import { ROAD_WIDTH } from '@scene/schema';
-import { getAppStore, MOVE_STEP, ROAD_STEP, useEditor } from '../../editor/store.ts';
+import { getAppStore, MOVE_STEP, useEditor } from '../../editor/store.ts';
 import { catalogById, entityFromCatalog } from '../../lib/catalog.ts';
 import { placementProblem, snap } from '../../lib/geometry.ts';
 import { PALETTE } from '../environment/palette.ts';
 import { EntityShape } from '../entities/Shapes.tsx';
 import { draftStore, pointerStore } from '../interaction.ts';
-import { snapRoadPoint } from './roadSnap.ts';
+import { snapRectPoint, snapRoadPoint } from './roadSnap.ts';
+import { isRectTool } from './Ground.tsx';
 
 const noRaycast = () => null;
 
@@ -118,8 +119,7 @@ function FootprintPreview() {
     const update = () => {
       const p = pointerStore.getState();
       const s = getAppStore().getState();
-      const x = s.snapOn ? snap(p.x, ROAD_STEP) : p.x;
-      const z = s.snapOn ? snap(p.z, ROAD_STEP) : p.z;
+      const [x, z] = snapRectPoint(p.x, p.z, s.doc.entities, s.snapOn);
       if (corner.current) {
         corner.current.visible = p.inside;
         corner.current.position.set(x, 0.12, z);
@@ -151,7 +151,7 @@ function FootprintPreview() {
 export function ToolPreviews() {
   const tool = useEditor((s) => s.tool);
   if (tool === 'road') return <RoadPreview />;
-  if (tool === 'footprint') return <FootprintPreview />;
+  if (isRectTool(tool)) return <FootprintPreview />;
   if (tool.startsWith('place:')) return <PlacementGhost key={tool} assetId={tool.slice(6)} />;
   return null;
 }

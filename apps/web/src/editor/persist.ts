@@ -1,6 +1,7 @@
 import { parseDocument, serializeDocument, type SceneDocument, type ValidationResult } from '@scene/schema';
 
-export const STORAGE_KEY = 'isoeditor:project:current';
+// v2: Phase 2 reference world (Phase 1 test scenes are not carried over).
+export const STORAGE_KEY = 'isoeditor:project:v2';
 const HINT_KEY = 'isoeditor:hint-dismissed';
 
 /** Browser storage can throw (private mode, quota, blocked site data): never let it crash the editor. */

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /** Colour tokens from REFERENCE_ANALYSIS §4 (images 2 and 6). */
 export const PALETTE = {
-  ground: '#F4F6F8',
+  ground: '#F5F7F9',
   shadow: '#C9D3DF',
   asphalt: '#3B4048',
   roadLine: '#FFFFFF',

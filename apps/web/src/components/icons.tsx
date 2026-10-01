@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { IconName } from '../lib/catalog.ts';
 
 type UiIcon = IconName | 'undo' | 'redo' | 'save' | 'camera' | 'grid' | 'magnet' | 'copy' | 'trash' | 'rotate'
-  | 'move' | 'scale' | 'close' | 'reset' | 'help';
+  | 'move' | 'scale' | 'close' | 'reset' | 'help' | 'eye';
 
 const P: Record<UiIcon, ReactNode> = {
   cursor: <path d="M6 3l12 9-5.5 1.2L15 20l-2.6 1.1-2.6-6.6L6 18z" />,
@@ -28,6 +28,23 @@ const P: Record<UiIcon, ReactNode> = {
   scale: <><rect x="3" y="11" width="10" height="10" /><path d="M13 11l8-8M15 3h6v6" /></>,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   reset: <><path d="M4 4v6h6" /><path d="M20 20a8 8 0 01-14.9-4M4 10a8 8 0 0114.9 4" /></>,
+  lot: <><path d="M3 8l9-4 9 4-9 4z" /><path d="M3 8v8l9 4 9-4V8" strokeDasharray="2 2" /></>,
+  parking: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M10 16V8h3a2.5 2.5 0 010 5h-3" /></>,
+  facade: <><rect x="5" y="3" width="14" height="18" /><path d="M5 3l14 18" opacity="0.5" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2" /></>,
+  storefront: <><path d="M3 9l2-5h14l2 5" /><path d="M4 9v11h16V9M3 9h18" /><rect x="7" y="12" width="4" height="8" /><path d="M14 12h4v4h-4z" /></>,
+  clinic: <><rect x="4" y="5" width="16" height="16" /><path d="M12 8v6M9 11h6" /></>,
+  tower: <><rect x="8" y="2" width="8" height="19" /><path d="M8 6h8M8 10h8M8 14h8M8 18h8" /><path d="M4 21h16" /></>,
+  factory: <><path d="M3 21V11l5 3v-3l5 3V8h3V3h2v5h2v13z" /></>,
+  complex: <><path d="M3 21V9h7v12M10 21V5h11v16M3 21h18" /><path d="M13 9h5M13 13h5M5 13h3" /></>,
+  long: <><rect x="2" y="10" width="20" height="10" /><path d="M2 14h20M6 10v10M10 10v10M14 10v10M18 10v10" /></>,
+  buildings: <><path d="M3 21V8h7v13M10 21V3h8v18M3 21h18" /><path d="M13 7h2M13 11h2M13 15h2M5 12h2M5 16h2" /></>,
+  pine: <><path d="M12 2l5 7h-3l4 6h-4l3 4H7l3-4H6l4-6H7z" /><path d="M12 19v3" /></>,
+  boxtree: <><rect x="7" y="4" width="10" height="11" rx="1" /><path d="M12 15v6" /></>,
+  trees: <><path d="M8 3l4 7H4z" /><path d="M8 10v4M16 6l4 7h-8z" /><path d="M16 13v4M2 21h20" /></>,
+  traffic: <><rect x="9" y="2" width="6" height="12" rx="2" /><circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="8" r="1" /><circle cx="12" cy="11" r="1" /><path d="M12 14v8" /></>,
+  car: <><path d="M3 16v-4l2-5h14l2 5v4z" /><path d="M3 12h18" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></>,
+  street: <><path d="M8 21V7h6" /><path d="M14 5h4v3h-4zM5 21h6" /><rect x="15" y="12" width="4" height="8" rx="1" /></>,
+  eye: <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .6-1.5 1.2-1.5 2.5M12 17.5v.5" /></>,
 };
 

@@ -19,5 +19,5 @@ export default tseslint.config(
     },
   },
   // e2e scripts run in Node but pass callbacks that execute in the page.
-  { files: ['tests/e2e/**/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
+  { files: ['tests/e2e/**/*.mjs', 'scripts/**/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
 );

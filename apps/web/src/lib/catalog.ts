@@ -1,35 +1,50 @@
-import { DEFAULT_STOREY, type BuildingMeta, type BuildingStyle, type EntityType, type SceneEntity } from '@scene/schema';
+import { DEFAULT_STOREY, type BuildingMeta, type EntityType, type SceneEntity } from '@scene/schema';
+import { MANIFEST } from './assets.ts';
 
 export type IconName =
-  | 'cursor' | 'road' | 'footprint' | 'brick' | 'white' | 'glass' | 'cone' | 'round' | 'hedge' | 'lamp';
+  | 'cursor' | 'road' | 'footprint' | 'lot' | 'parking' | 'facade' | 'brick' | 'white' | 'glass' | 'storefront'
+  | 'clinic' | 'tower' | 'factory' | 'complex' | 'long' | 'buildings'
+  | 'cone' | 'pine' | 'round' | 'boxtree' | 'trees' | 'hedge' | 'lamp' | 'traffic' | 'car' | 'street';
 
-/** A placeable asset. Phase 1: primitives; Phase 2+: `glbUrl` on the same entry. */
+export type CatalogGroup = 'buildings' | 'trees' | 'street';
+
+/** A placeable asset: a procedural primitive or a normalised GLB from the asset pipeline. */
 export interface CatalogItem {
   id: string;
   label: string;
   hint: string;
   icon: IconName;
   type: EntityType;
+  group: CatalogGroup;
   metadata?: Record<string, unknown>;
 }
 
-const building = (style: BuildingStyle, label: string, hint: string, w: number, d: number, floors: number): CatalogItem => ({
-  id: `prim:building-${style}`,
-  label,
-  hint,
-  icon: style,
-  type: 'building',
-  metadata: { width: w, depth: d, floors, storeyHeight: DEFAULT_STOREY, style } satisfies BuildingMeta,
-});
+const GLB_ICON: Record<string, IconName> = {
+  'glb:minora': 'tower', 'glb:texnik_bino': 'factory', 'glb:majmua': 'complex', 'glb:uch_qavatli': 'long',
+};
 
 export const CATALOG: CatalogItem[] = [
-  building('brick', "G'isht bino", "Qizil g'ishtli 3 qavatli bino", 20, 12, 3),
-  building('white', 'Oq bino', 'Oq 4 qavatli bino (klinika uslubi)', 24, 18, 4),
-  building('glass', 'Minora', 'Baland shisha minora', 14, 12, 10),
-  { id: 'prim:tree-cone', label: 'Archa', hint: 'Qorli archa', icon: 'cone', type: 'tree' },
-  { id: 'prim:tree-round', label: 'Daraxt', hint: 'Dumaloq daraxt', icon: 'round', type: 'tree' },
-  { id: 'prim:hedge', label: 'Butazor', hint: "Yashil to'siq (butazor)", icon: 'hedge', type: 'prop' },
-  { id: 'prim:lamp', label: 'Chiroq', hint: "Ko'cha chirog'i", icon: 'lamp', type: 'prop' },
+  {
+    id: 'prim:clinic', label: 'Klinika', hint: "Klinika (6-rasm asosida vaqtinchalik model; GLB kelganda almashtiriladi)",
+    icon: 'clinic', type: 'building', group: 'buildings',
+    metadata: { width: 30, depth: 28, floors: 4, storeyHeight: 3.6, style: 'white', kind: 'clinic', name: 'Klinika' } satisfies BuildingMeta,
+  },
+  ...MANIFEST.map((m): CatalogItem => ({
+    id: m.id, label: m.label, hint: m.hint || m.label, icon: GLB_ICON[m.id] ?? 'buildings', type: 'building', group: 'buildings',
+    metadata: { width: m.size[0], depth: m.size[2], height: m.size[1], name: m.label },
+  })),
+  {
+    id: 'prim:building-brick', label: 'Zlín bino', hint: "Qizil g'isht + oq karkas, 4 qavat", icon: 'brick', type: 'building', group: 'buildings',
+    metadata: { width: 30, depth: 13, floors: 4, storeyHeight: DEFAULT_STOREY, style: 'brick' } satisfies BuildingMeta,
+  },
+  { id: 'prim:tree-cone', label: 'Archa', hint: 'Qorli oq archa', icon: 'cone', type: 'tree', group: 'trees' },
+  { id: 'prim:tree-pine', label: "Qarag'ay", hint: "Yashil qarag'ay, qor bilan", icon: 'pine', type: 'tree', group: 'trees' },
+  { id: 'prim:tree-round', label: 'Daraxt', hint: 'Dumaloq qorli daraxt', icon: 'round', type: 'tree', group: 'trees' },
+  { id: 'prim:tree-box', label: "To'rtburchak", hint: "Yashil kesilgan daraxt (klinika oldida)", icon: 'boxtree', type: 'tree', group: 'trees' },
+  { id: 'prim:hedge', label: 'Butazor', hint: "Yashil to'siq", icon: 'hedge', type: 'prop', group: 'trees' },
+  { id: 'prim:lamp', label: 'Chiroq', hint: "Ko'cha chirog'i", icon: 'lamp', type: 'prop', group: 'street' },
+  { id: 'prim:traffic-light', label: 'Svetofor', hint: 'Chorraha svetofori', icon: 'traffic', type: 'prop', group: 'street' },
+  { id: 'prim:car', label: 'Mashina', hint: 'Turgan mashina', icon: 'car', type: 'vehicle', group: 'street', metadata: { color: 0 } },
 ];
 
 export const catalogById = new Map(CATALOG.map((c) => [c.id, c]));

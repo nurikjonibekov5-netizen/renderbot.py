@@ -1,127 +1,145 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { Component, Suspense, useMemo, type ReactNode } from 'react';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { SceneEntity } from '@scene/schema';
-import { buildingMeta, roadMeta } from '../../lib/geometry.ts';
-import { GEO, MAT } from '../environment/palette.ts';
+import { buildingMeta, isGlb, localBounds, lotMeta, roadMeta } from '../../lib/geometry.ts';
+import { assetUrl, manifestById, MANIFEST } from '../../lib/assets.ts';
+import { GLOW_MAT, SOLID_MAT, type BuiltShape } from '../build/builder.ts';
+import { buildingShape } from '../build/buildings.ts';
+import {
+  boxTree, car, coneTree, hedge, lamp, lotShape, pineTree, pipeBridgeShape, railShape, roundTree, trafficLight,
+} from '../build/props.ts';
+import { roadShape, type Crossing } from '../build/roads.ts';
 
 interface ShapeProps {
   entity: SceneEntity;
   /** Override material for every mesh (ghost preview). */
   override?: THREE.Material;
+  /** Road junctions (computed from the whole network). */
+  crossings?: readonly Crossing[];
+  /** Live preview of the floor count while the height handle is dragged. */
+  previewFloors?: number;
 }
 
 type V3 = [number, number, number];
 
-function Part({ size, at, mat, override, geo = GEO.box }: {
-  size: V3; at: V3; mat: THREE.Material; override?: THREE.Material; geo?: THREE.BufferGeometry;
-}) {
-  return (
-    <mesh
-      geometry={geo}
-      material={override ?? mat}
-      position={at}
-      scale={size}
-      castShadow={!override}
-      receiveShadow={!override}
-    />
-  );
-}
-
-function BuildingShape({ entity, override }: ShapeProps) {
-  const m = buildingMeta(entity);
-  const body = m.floors * m.storeyHeight;
-  const bodyMat = m.style === 'white' ? MAT.white : m.style === 'glass' ? MAT.glass : MAT.brick;
-  const bandMat = m.style === 'glass' ? MAT.trim : MAT.glass;
-  const bands = [];
-  for (let i = 0; i < m.floors; i += 1) {
-    const ground = i === 0;
-    const h = ground ? Math.min(2.2, m.storeyHeight - 0.6) : Math.min(1.1, m.storeyHeight - 1);
-    const y = i * m.storeyHeight + (ground ? 0.4 + h / 2 : 1.2 + h / 2);
-    bands.push(<Part key={i} size={[m.width + 0.12, h, m.depth + 0.12]} at={[0, y, 0]} mat={bandMat} override={override} />);
-  }
+function Built({ shape, override, cast = true }: { shape: BuiltShape; override?: THREE.Material; cast?: boolean }) {
   return (
     <>
-      <Part size={[m.width, body, m.depth]} at={[0, body / 2, 0]} mat={bodyMat} override={override} />
-      {bands}
-      <Part size={[m.width + 0.3, 0.6, m.depth + 0.3]} at={[0, body + 0.3, 0]} mat={MAT.roof} override={override} />
+      {shape.solid && (
+        <mesh geometry={shape.solid} material={override ?? SOLID_MAT} castShadow={cast && !override} receiveShadow={!override} />
+      )}
+      {shape.glow && <mesh geometry={shape.glow} material={override ?? GLOW_MAT} />}
     </>
   );
 }
 
-const DASH = 3;
-const DASH_GAP = 3;
+/** Runtime bounding-box report per GLB asset (Gate 2 check; read by e2e tests). */
+export const assetReport = new Map<string, { minY: number; size: V3; meshes: number; lights: number }>();
 
-function RoadShape({ entity, override }: ShapeProps) {
-  const { length, width } = roadMeta(entity);
-  const dashes = useRef<THREE.InstancedMesh>(null);
-  const count = Math.max(1, Math.floor(length / (DASH + DASH_GAP)));
-  useLayoutEffect(() => {
-    const mesh = dashes.current;
-    if (!mesh) return;
-    const m = new THREE.Matrix4();
-    const start = -((count - 1) * (DASH + DASH_GAP)) / 2;
-    for (let i = 0; i < count; i += 1) {
-      m.compose(new THREE.Vector3(start + i * (DASH + DASH_GAP), 0.045, 0), new THREE.Quaternion(), new THREE.Vector3(DASH, 0.01, 0.22));
-      mesh.setMatrixAt(i, m);
+function GlbModel({ entity, override }: ShapeProps) {
+  const entry = manifestById.get(entity.assetId!)!;
+  const { scene } = useGLTF(assetUrl(entry.file));
+  const object = useMemo(() => {
+    const clone = scene.clone(true);
+    const lights: THREE.Object3D[] = [];
+    let meshes = 0;
+    clone.traverse((o) => {
+      if ((o as THREE.Light).isLight) lights.push(o);
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      meshes += 1;
+      mesh.castShadow = !override;
+      mesh.receiveShadow = !override;
+      if (override) mesh.material = override;
+    });
+    // Defensive: embedded lights are stripped by the pipeline, but never let one into the scene.
+    for (const l of lights) l.removeFromParent();
+    clone.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(clone);
+    if (!override) {
+      const s = box.getSize(new THREE.Vector3());
+      assetReport.set(entry.id, { minY: box.min.y, size: [s.x, s.y, s.z], meshes, lights: lights.length });
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere();
-  }, [count]);
-  if (override) return <Part size={[length, 0.06, width]} at={[0, 0.03, 0]} mat={override} override={override} />;
-  const edge = width / 2 - 0.45;
+    return clone;
+  }, [scene, override, entry.id]);
+  return <primitive object={object} />;
+}
+
+for (const m of MANIFEST) useGLTF.preload(assetUrl(m.file));
+
+const placeholderMat = new THREE.MeshStandardMaterial({ color: '#D9DEE4', transparent: true, opacity: 0.6 });
+const brokenMat = new THREE.MeshStandardMaterial({ color: '#E5484D', transparent: true, opacity: 0.55 });
+
+function BoundsBox({ entity, material }: { entity: SceneEntity; material: THREE.Material }) {
+  const b = localBounds(entity);
   return (
-    <>
-      <Part size={[length, 0.04, width]} at={[0, 0.02, 0]} mat={MAT.asphalt} />
-      <Part size={[length, 0.01, 0.18]} at={[0, 0.045, edge]} mat={MAT.roadLine} />
-      <Part size={[length, 0.01, 0.18]} at={[0, 0.045, -edge]} mat={MAT.roadLine} />
-      <instancedMesh ref={dashes} args={[GEO.box, MAT.roadLine, count]} receiveShadow />
-    </>
+    <mesh position={b.center} material={material}>
+      <boxGeometry args={b.size} />
+    </mesh>
   );
 }
 
-function ConeTree({ override }: { override?: THREE.Material }) {
-  return (
-    <>
-      <Part geo={GEO.cylinder} size={[0.25, 1.2, 0.25]} at={[0, 0.6, 0]} mat={MAT.trunk} override={override} />
-      <Part geo={GEO.cone} size={[1.6, 3, 1.6]} at={[0, 2.5, 0]} mat={MAT.snow} override={override} />
-      <Part geo={GEO.cone} size={[1.2, 2.4, 1.2]} at={[0, 4, 0]} mat={MAT.snow} override={override} />
-      <Part geo={GEO.cone} size={[0.8, 1.8, 0.8]} at={[0, 5.4, 0]} mat={MAT.snow} override={override} />
-    </>
-  );
-}
-
-function RoundTree({ override }: { override?: THREE.Material }) {
-  return (
-    <>
-      <Part geo={GEO.cylinder} size={[0.25, 2, 0.25]} at={[0, 1, 0]} mat={MAT.trunk} override={override} />
-      <Part geo={GEO.ico} size={[1.6, 1.9, 1.6]} at={[0, 3.6, 0]} mat={MAT.snow} override={override} />
-    </>
-  );
-}
-
-function Lamp({ override }: { override?: THREE.Material }) {
-  return (
-    <>
-      <Part geo={GEO.cylinder} size={[0.08, 5.2, 0.08]} at={[0, 2.6, 0]} mat={MAT.metal} override={override} />
-      <Part size={[0.9, 0.1, 0.12]} at={[0.4, 5.15, 0]} mat={MAT.metal} override={override} />
-      <Part size={[0.45, 0.14, 0.3]} at={[0.8, 5.05, 0]} mat={MAT.lampGlow} override={override} />
-    </>
-  );
+/** A broken asset shows a red placeholder instead of blanking the scene (master prompt §24). */
+class AssetBoundary extends Component<{ entity: SceneEntity; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: Error) {
+    console.warn(`[asset] ${this.props.entity.assetId} failed to load:`, err.message);
+  }
+  render() {
+    if (this.state.failed) return <BoundsBox entity={this.props.entity} material={brokenMat} />;
+    return this.props.children;
+  }
 }
 
 /** Visual for one entity in local space. Unknown types render a neutral box instead of crashing. */
-export function EntityShape({ entity, override }: ShapeProps) {
+export function EntityShape({ entity, override, crossings, previewFloors }: ShapeProps) {
+  if (isGlb(entity)) {
+    if (!manifestById.has(entity.assetId!)) return <BoundsBox entity={entity} material={brokenMat} />;
+    return (
+      <AssetBoundary entity={entity}>
+        <Suspense fallback={<BoundsBox entity={entity} material={override ?? placeholderMat} />}>
+          <GlbModel entity={entity} override={override} />
+        </Suspense>
+      </AssetBoundary>
+    );
+  }
   switch (entity.type) {
-    case 'building':
-      return <BuildingShape entity={entity} override={override} />;
-    case 'road':
-      return <RoadShape entity={entity} override={override} />;
+    case 'building': {
+      const m = buildingMeta(entity);
+      if (previewFloors) m.floors = previewFloors;
+      return <Built shape={buildingShape(override ? 'ghost' : entity.id, m)} override={override} />;
+    }
+    case 'road': {
+      const { length, width } = roadMeta(entity);
+      return <Built shape={roadShape(length, width, override ? [] : crossings ?? [])} override={override} cast={false} />;
+    }
+    case 'lot':
+      return <Built shape={lotShape(override ? 'ghost' : entity.id, lotMeta(entity))} override={override} cast={false} />;
+    case 'vehicle':
+      return <Built shape={car(Number(entity.metadata?.color) || 0)} override={override} />;
     case 'tree':
-      return entity.assetId === 'prim:tree-round' ? <RoundTree override={override} /> : <ConeTree override={override} />;
+      switch (entity.assetId) {
+        case 'prim:tree-round': return <Built shape={roundTree()} override={override} />;
+        case 'prim:tree-pine': return <Built shape={pineTree()} override={override} />;
+        case 'prim:tree-box': return <Built shape={boxTree()} override={override} />;
+        default: return <Built shape={coneTree()} override={override} />;
+      }
     default:
-      if (entity.assetId === 'prim:hedge') return <Part size={[4, 1.2, 1.2]} at={[0, 0.6, 0]} mat={MAT.hedge} override={override} />;
-      if (entity.assetId === 'prim:lamp') return <Lamp override={override} />;
-      return <Part size={[1, 1, 1]} at={[0, 0.5, 0]} mat={MAT.trim} override={override} />;
+      switch (entity.assetId) {
+        case 'prim:hedge': return <Built shape={hedge()} override={override} />;
+        case 'prim:lamp': return <Built shape={lamp()} override={override} />;
+        case 'prim:traffic-light': return <Built shape={trafficLight()} override={override} />;
+        case 'prim:rail':
+          return <Built shape={railShape(entity.id, Number(entity.metadata?.length) || 100, Number(entity.metadata?.tracks) || 3)} override={override} />;
+        case 'prim:pipe-bridge':
+          return <Built shape={pipeBridgeShape(Number(entity.metadata?.length) || 40)} override={override} />;
+        default:
+          return <BoundsBox entity={entity} material={override ?? placeholderMat} />;
+      }
   }
 }
 

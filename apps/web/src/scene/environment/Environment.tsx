@@ -4,16 +4,19 @@ import { PALETTE } from './palette.ts';
 
 /** Soft winter daylight (images 2/6): strong sky fill, sun from front-left, low-contrast shadows. */
 export function Lights({ mobile }: { mobile: boolean }) {
-  const size = 170;
+  const size = 215;
+  const map = mobile ? 2048 : 4096;
   return (
     <>
-      <hemisphereLight args={['#ffffff', PALETTE.shadow, 1.6]} />
-      <ambientLight intensity={0.35} />
+      {/* cool sky fill + warm low sun: the warm/cool split of images 2 and 6 */}
+      <hemisphereLight args={['#EAF1FF', PALETTE.shadow, 1.5]} />
+      <ambientLight intensity={0.3} />
       <directionalLight
-        position={[-70, 150, 90]}
-        intensity={2.1}
+        position={[-90, 170, 110]}
+        intensity={2.3}
+        color="#FFEEDA"
         castShadow
-        shadow-mapSize={[mobile ? 1024 : 2048, mobile ? 1024 : 2048]}
+        shadow-mapSize={[map, map]}
         shadow-bias={-0.0006}
         shadow-normalBias={0.05}
         shadow-camera-left={-size}
@@ -21,7 +24,7 @@ export function Lights({ mobile }: { mobile: boolean }) {
         shadow-camera-top={size}
         shadow-camera-bottom={-size}
         shadow-camera-near={10}
-        shadow-camera-far={500}
+        shadow-camera-far={600}
       />
     </>
   );

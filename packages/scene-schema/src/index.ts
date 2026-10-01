@@ -4,18 +4,42 @@
 export const SCHEMA_VERSION = 1 as const;
 
 export type Vec3 = [number, number, number];
-export type EntityType = 'building' | 'road' | 'vehicle' | 'tree' | 'prop' | 'character';
-export const ENTITY_TYPES: readonly EntityType[] = ['building', 'road', 'vehicle', 'tree', 'prop', 'character'];
+export type EntityType = 'building' | 'road' | 'lot' | 'vehicle' | 'tree' | 'prop' | 'character';
+export const ENTITY_TYPES: readonly EntityType[] = ['building', 'road', 'lot', 'vehicle', 'tree', 'prop', 'character'];
 
 export type BuildingStyle = 'brick' | 'white' | 'glass';
+/** Facade sides in local space: n = -Z, s = +Z, e = +X, w = -X. */
+export type FaceKey = 'n' | 's' | 'e' | 'w';
+export const FACE_KEYS: readonly FaceKey[] = ['n', 'e', 's', 'w'];
 
-/** metadata of a `building` entity (footprint centred on position, base at y = position[1]). */
+/**
+ * metadata of a procedural `building` entity (footprint centred on position, base at y = position[1]).
+ * GLB buildings (assetId 'glb:*') carry only width/depth/height measured by the asset pipeline.
+ */
 export interface BuildingMeta {
   width: number;
   depth: number;
   floors: number;
   storeyHeight: number;
+  /** default facade style for every side */
   style: BuildingStyle;
+  /** per-side overrides applied with the facade tool (video 11–13 s) */
+  faces?: Partial<Record<FaceKey, BuildingStyle>>;
+  /** ground-floor treatment (video 22–25 s) */
+  ground?: 'same' | 'storefront';
+  /** 'clinic' = parametric stand-in for the clinic (image 6) until its real GLB exists */
+  kind?: 'standard' | 'clinic';
+  /** roof finish: snowy light (default) or dark membrane (large Zlín blocks, image 2) */
+  roof?: 'light' | 'dark';
+  name?: string;
+}
+
+export type LotSurface = 'paved' | 'parking' | 'plaza';
+/** metadata of a `lot` entity: a ground parcel drawn with the lot tool (video 8–10 s). */
+export interface LotMeta {
+  width: number;
+  depth: number;
+  surface: LotSurface;
 }
 
 /** metadata of a `road` entity: a straight segment centred on position, running along local +X. */
@@ -77,7 +101,7 @@ export function normalizeEntity(e: SceneEntity): SceneEntity {
     rotation: e.rotation.map(round4) as Vec3,
     scale: e.scale.map(clampScale) as Vec3,
   };
-  if (e.type === 'building' && e.metadata) {
+  if (e.type === 'building' && e.metadata && e.metadata.floors !== undefined) {
     const m = e.metadata as Partial<BuildingMeta>;
     out.metadata = {
       ...e.metadata,

@@ -67,6 +67,9 @@ export function TopBar({ onHelp }: { onHelp: () => void }) {
         <button className="tb" data-testid="reset-sample" onClick={resetScene} data-tip="Namuna sahnani qayta yuklash">
           <Icon name="reset" /><span className="lbl">Namuna</span>
         </button>
+        <button className="tb" data-testid="present" onClick={() => st().setPresenting(true)} data-tip="Shaharni ko'rish rejimi (tugmalar yashiriladi)">
+          <Icon name="eye" /><span className="lbl">Ko'rish</span>
+        </button>
         <button className="tb" data-testid="help" onClick={onHelp} data-tip="Qisqa yo'riqnoma">
           <Icon name="help" />
         </button>

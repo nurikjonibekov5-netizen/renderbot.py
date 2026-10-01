@@ -5,12 +5,14 @@ import * as THREE from 'three';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import { useEditor } from '../../editor/store.ts';
 import { WORLD_HALF } from '../../lib/geometry.ts';
+import { isRectTool } from '../placement/Ground.tsx';
 
 /** Default view (REFERENCE_ANALYSIS §4): ~35° elevation, 45° azimuth, narrow lens. */
 export const CAMERA_DEFAULT = {
   fov: 28,
-  target: new THREE.Vector3(2, 0, 0),
-  distance: 230,
+  /** the clinic (focal asset) slightly off-centre towards the crossroads, like image 6 */
+  target: new THREE.Vector3(-16, 0, -20),
+  distance: 185,
   polar: THREE.MathUtils.degToRad(55),
   azimuth: THREE.MathUtils.degToRad(45),
   orthoZoom: 4.2,
@@ -39,7 +41,7 @@ export function defaultCameraPosition(aspect?: number): THREE.Vector3 {
 
 /**
  * Video camera: left-drag pan on the ground, right-drag orbit, wheel/pinch zoom, damped.
- * The footprint tool takes the left button for drawing; the gizmo disables controls while dragging.
+ * Lot/parking/footprint tools take the left button (one finger) for drawing; the gizmo disables controls while dragging.
  */
 export function CameraRig() {
   const controls = useRef<MapControlsImpl>(null);
@@ -48,6 +50,7 @@ export function CameraRig() {
   const getState = useThree((s) => s.get);
   const resetTick = useEditor((s) => s.cameraResetTick);
   const tool = useEditor((s) => s.tool);
+  const presenting = useEditor((s) => s.presenting);
 
   useEffect(() => {
     const c = controls.current;
@@ -67,11 +70,11 @@ export function CameraRig() {
     const c = controls.current;
     if (!c) return;
     c.mouseButtons = {
-      LEFT: tool === 'footprint' ? (-1 as THREE.MOUSE) : THREE.MOUSE.PAN,
+      LEFT: isRectTool(tool) ? (-1 as THREE.MOUSE) : THREE.MOUSE.PAN,
       MIDDLE: THREE.MOUSE.DOLLY,
       RIGHT: THREE.MOUSE.ROTATE,
     };
-    c.touches = { ONE: tool === 'footprint' ? (-1 as THREE.TOUCH) : THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    c.touches = { ONE: isRectTool(tool) ? (-1 as THREE.TOUCH) : THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   }, [tool]);
 
   /** Keep the orbit target on the ground and inside the world. */
@@ -103,6 +106,8 @@ export function CameraRig() {
       maxPolarAngle={CAMERA_LIMITS.maxPolar}
       zoomSpeed={0.9}
       onChange={clampTarget}
+      autoRotate={presenting}
+      autoRotateSpeed={0.35}
     />
   );
 }

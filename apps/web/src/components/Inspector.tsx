@@ -1,15 +1,17 @@
-import type { BuildingStyle, SceneEntity, Vec3 } from '@scene/schema';
+import type { BuildingStyle, LotSurface, SceneEntity, Vec3 } from '@scene/schema';
 import { FLOORS_MAX } from '@scene/schema';
 import { getAppStore, useEditor, type TransformMode } from '../editor/store.ts';
 import { catalogById } from '../lib/catalog.ts';
-import { buildingMeta, roadMeta } from '../lib/geometry.ts';
+import { buildingMeta, isGlb, lotMeta, roadMeta } from '../lib/geometry.ts';
+import { manifestById } from '../lib/assets.ts';
 import { Icon } from './icons.tsx';
 import { NumberField } from './NumberField.tsx';
 
 const TYPE_LABEL: Record<SceneEntity['type'], string> = {
-  building: 'Bino', road: "Yo'l", tree: 'Daraxt', prop: 'Jihoz', vehicle: 'Mashina', character: 'Odam',
+  building: 'Bino', road: "Yo'l", lot: 'Uchastka', tree: 'Daraxt', prop: 'Jihoz', vehicle: 'Mashina', character: 'Odam',
 };
-const STYLE_LABEL: Record<BuildingStyle, string> = { brick: "G'isht", white: 'Oq', glass: 'Shisha' };
+const STYLE_LABEL: Record<BuildingStyle, string> = { brick: 'Zlín', white: 'Oq', glass: 'Shisha' };
+const SURFACE_LABEL: Record<LotSurface, string> = { paved: 'Tosh', parking: 'Parking', plaza: 'Maydon' };
 const deg = (r: number) => Math.round((r * 180) / Math.PI * 10) / 10;
 
 export function Inspector() {
@@ -61,7 +63,7 @@ export function Inspector() {
           label="Burilish" suffix="°" step={15} value={deg(entity.rotation[1])} testId="field-rot"
           onCommit={(v) => upd('Aylantirish', (e) => ({ ...e, rotation: [e.rotation[0], (v * Math.PI) / 180, e.rotation[2]] }))}
         />
-        {entity.type !== 'building' && entity.type !== 'road' && (
+        {entity.type !== 'building' && entity.type !== 'road' && entity.type !== 'lot' && (
           <NumberField
             label="Masshtab" step={0.1} min={0.05} max={50} value={entity.scale[0]} testId="field-scale"
             onCommit={(v) => upd("O'lcham", (e) => ({ ...e, scale: [v, v * (e.scale[1] / (e.scale[0] || 1)), v] }))}
@@ -69,7 +71,14 @@ export function Inspector() {
         )}
       </div>
 
-      {entity.type === 'building' && <BuildingFields entity={entity} meta={meta} />}
+      {entity.type === 'building' && !isGlb(entity) && <BuildingFields entity={entity} meta={meta} />}
+      {entity.type === 'building' && isGlb(entity) && <GlbInfo entity={entity} />}
+      {entity.type === 'lot' && <LotFields entity={entity} meta={meta} />}
+      {entity.type === 'vehicle' && (
+        <button className="btn" data-testid="car-color" onClick={() => meta({ color: (Number(entity.metadata?.color) || 0) + 1 }, 'Rang')}>
+          Rangini almashtirish
+        </button>
+      )}
       {entity.type === 'road' && (
         <div className="insp-grid">
           <NumberField label="Uzunlik" suffix="m" min={4} max={400} value={roadMeta(entity).length}
@@ -110,8 +119,43 @@ function BuildingFields({ entity, meta }: { entity: SceneEntity; meta: (p: Recor
       </div>
       <div className="segmented">
         {(Object.keys(STYLE_LABEL) as BuildingStyle[]).map((s) => (
-          <button key={s} className={`seg ${m.style === s ? 'active' : ''}`} data-testid={`style-${s}`}
-            onClick={() => meta({ style: s }, "Uslub")}>{STYLE_LABEL[s]}</button>
+          <button key={s} className={`seg ${m.style === s && !Object.keys(m.faces ?? {}).length ? 'active' : ''}`} data-testid={`style-${s}`}
+            onClick={() => meta({ style: s, faces: {} }, 'Fasad')}>{STYLE_LABEL[s]}</button>
+        ))}
+      </div>
+      <div className="segmented">
+        <button className={`seg ${m.ground !== 'storefront' ? 'active' : ''}`} data-testid="ground-same" onClick={() => meta({ ground: 'same' }, 'Pastki qavat')}>Oddiy pastki qavat</button>
+        <button className={`seg ${m.ground === 'storefront' ? 'active' : ''}`} data-testid="ground-storefront" onClick={() => meta({ ground: 'storefront' }, "Do'kon qavati")}>Do'kon</button>
+      </div>
+      <p className="insp-note">Qavatlarni binoning burchagidagi to'q sariq tutqichni yuqoriga/pastga tortib ham o'zgartirasiz.</p>
+    </>
+  );
+}
+
+function GlbInfo({ entity }: { entity: SceneEntity }) {
+  const m = manifestById.get(entity.assetId ?? '');
+  if (!m) return <p className="insp-note">3D model topilmadi: {entity.assetId}</p>;
+  return (
+    <div className="insp-note" data-testid="glb-info">
+      <div><b>3D model:</b> {m.file.split('/').pop()}</div>
+      <div>{m.size[0].toFixed(1)} × {m.size[2].toFixed(1)} m, balandligi {m.size[1].toFixed(1)} m</div>
+      <div>Tekshiruv: {m.fixes.length ? m.fixes.join('; ') : "o'zgartirish kerak bo'lmadi"}{m.warnings.length ? ` · ⚠ ${m.warnings.join('; ')}` : ''}</div>
+    </div>
+  );
+}
+
+function LotFields({ entity, meta }: { entity: SceneEntity; meta: (p: Record<string, unknown>, l: string) => void }) {
+  const m = lotMeta(entity);
+  return (
+    <>
+      <div className="insp-grid">
+        <NumberField label="Eni" suffix="m" min={6} max={300} value={m.width} onCommit={(v) => meta({ width: v }, 'Eni')} testId="field-width" />
+        <NumberField label="Bo'yi" suffix="m" min={6} max={300} value={m.depth} onCommit={(v) => meta({ depth: v }, "Bo'yi")} testId="field-depth" />
+      </div>
+      <div className="segmented">
+        {(Object.keys(SURFACE_LABEL) as LotSurface[]).map((s) => (
+          <button key={s} className={`seg ${m.surface === s ? 'active' : ''}`} data-testid={`surface-${s}`}
+            onClick={() => meta({ surface: s }, 'Qoplama')}>{SURFACE_LABEL[s]}</button>
         ))}
       </div>
     </>

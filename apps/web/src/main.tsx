@@ -5,10 +5,13 @@ import { createEditorStore, setAppStore } from './editor/store.ts';
 import { clearStorage, loadFromStorage } from './editor/persist.ts';
 import { startAutosave } from './editor/autosave.ts';
 import { App } from './app/App.tsx';
+import { setStill } from './scene/interaction.ts';
 import './styles/app.css';
 
 // Restore the autosaved scene; fall back to the deterministic sample scene.
 const params = new URLSearchParams(location.search);
+// ?still: deterministic frames for screenshots/tests (no traffic motion, no construction animation)
+setStill(params.has('still'));
 if (params.has('fresh')) clearStorage();
 const saved = params.has('fresh') ? null : loadFromStorage();
 const store = createEditorStore(saved?.ok && saved.doc ? saved.doc : createSampleDocument());

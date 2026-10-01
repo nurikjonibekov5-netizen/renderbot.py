@@ -1,7 +1,7 @@
 import type { EntityType } from '@scene/schema';
 
 const PREFIX: Record<EntityType, string> = {
-  building: 'bld', road: 'road', vehicle: 'car', tree: 'tree', prop: 'prop', character: 'chr',
+  building: 'bld', road: 'road', lot: 'lot', vehicle: 'car', tree: 'tree', prop: 'prop', character: 'chr',
 };
 
 let counter = 0;

@@ -12,12 +12,42 @@ export interface PointerState {
 }
 export const pointerStore = createStore<PointerState>()(() => ({ x: 0, z: 0, inside: false }));
 
-/** In-progress tool drafts (road start point, footprint corner). Changes only on clicks. */
+/** In-progress tool drafts (road start point, rectangle corner of lot/parking/footprint). Changes only on clicks. */
 export interface DraftState {
   roadStart: [number, number] | null;
   footprintStart: [number, number] | null;
 }
 export const draftStore = createStore<DraftState>()(() => ({ roadStart: null, footprintStart: null }));
+
+/**
+ * Screenshot/test mode (`?still`): no construction animation, no traffic motion,
+ * so frames are deterministic (master prompt §30–31).
+ */
+let still = false;
+export function setStill(v: boolean): void {
+  still = v;
+}
+export function isStill(): boolean {
+  return still;
+}
+
+/** Construction animation registry: entity id → start time (video 10–12 s: the massing rises, then floors). */
+const builtAt = new Map<string, number>();
+export const BUILD_ANIM_MS = 900;
+export function markBuilt(id: string): void {
+  if (!still) builtAt.set(id, performance.now());
+}
+/** 0…1 progress of the construction animation, or null when none is running. */
+export function buildProgress(id: string): number | null {
+  const t0 = builtAt.get(id);
+  if (t0 === undefined) return null;
+  const k = (performance.now() - t0) / BUILD_ANIM_MS;
+  if (k >= 1) {
+    builtAt.delete(id);
+    return null;
+  }
+  return Math.max(0, k);
+}
 
 export function clearDrafts(): boolean {
   const d = draftStore.getState();
