@@ -93,21 +93,27 @@ export function buildSite(b) {
   // Xira qo'shni binolar: shahar hissi uchun, tuman ichida yo'qolib boradi.
   const nb = mat(PALETTE.neighbor, { roughness: 0.95 });
   const spots = [];
-  for (let i = -3; i <= 3; i++) {
-    spots.push([cx + i * 30, b.minZ - 44 - r() * 10]);
-    spots.push([cx + i * 30, frontZ + 30 + r() * 10]);
-  }
-  for (let i = -2; i <= 2; i++) {
+  // Faqat orqa va yon tomonlarda: kamera oldidagi qutichalar binoni to'sib, katta soya tashlardi.
+  for (let i = -3; i <= 3; i++) spots.push([cx + i * 30, b.minZ - 44 - r() * 10]);
+  for (let i = -2; i <= 0; i++) {
     spots.push([b.minX - 48 - r() * 8, cz + i * 26]);
     spots.push([sideX + 34 + r() * 8, cz + i * 28]);
   }
+  // Har qo'shni bino alohida guruhda: haqiqiy model shu joyga qo'yilsa, oddiy quticha yashiriladi.
+  const neighbors = new THREE.Group();
+  neighbors.name = 'neighbors';
   for (const [x, z] of spots) {
     const bw = 12 + r() * 12;
     const bd = 10 + r() * 10;
     const bh = 4 + r() * 9;
-    group.add(box(bw, bh, bd, nb, x, bh / 2, z));
-    group.add(box(bw + 0.3, 0.3, bd + 0.3, mat(0xe6e8eb), x, bh + 0.15, z, { cast: false }));
+    const nbg = new THREE.Group();
+    nbg.add(box(bw, bh, bd, nb, x, bh / 2, z));
+    nbg.add(box(bw + 0.3, 0.3, bd + 0.3, mat(0xe6e8eb), x, bh + 0.15, z, { cast: false }));
+    nbg.userData.rect = new THREE.Box3(new THREE.Vector3(x - bw / 2, 0, z - bd / 2), new THREE.Vector3(x + bw / 2, bh, z + bd / 2));
+    neighbors.add(nbg);
   }
+  group.add(neighbors);
+  group.userData.neighbors = neighbors;
   ownMaterials(group);
   return group;
 }

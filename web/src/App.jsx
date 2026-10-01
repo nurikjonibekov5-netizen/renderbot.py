@@ -201,7 +201,7 @@ export default function App() {
           insets={insets}
           onSelect={(id) => select(id)}
           onViewChange={setView}
-          onModelInfo={setModelInfo}
+          onModelInfo={(info) => setModelInfo((prev) => ({ ...(prev || {}), ...info }))}
           onHoverFloor={setHoverFloor}
         />
         <LeftMenu

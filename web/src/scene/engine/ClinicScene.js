@@ -18,6 +18,7 @@ import { buildInteriorFloor } from './interior.js';
 import { loadModelFloor } from './gltf.js';
 import { createCharacter } from './characters.js';
 import { buildHome, updateHome } from './dashboard.js';
+import { loadNeighbors } from './neighbors.js';
 
 const EXPLODE_GAP = 8.5;
 // "Bosh sahifa" maydonchalari binodan old tomonda, alohida joyda turadi.
@@ -74,8 +75,8 @@ export class ClinicScene {
     sun.position.set(-30, 60, 40);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.03;
+    sun.shadow.bias = -0.0006;
+    sun.shadow.normalBias = 0.08;
     sun.shadow.radius = 4;
     const sc = sun.shadow.camera;
     sc.left = -60;
@@ -168,6 +169,7 @@ export class ClinicScene {
     }
     this.setView('home', null, { animate: false });
     this.#loadModels(config.models || {});
+    this.#loadAtrof(config.models?.atrof || []);
   }
 
   #allBounds() {
@@ -197,6 +199,32 @@ export class ClinicScene {
     setGroupOpacity(this.exterior.group, this.exteriorVis);
     this.exterior.applied = this.exteriorVis;
     this.#updateChips();
+  }
+
+  // Atrofdagi binolar: yuklangach, o'sha joydagi oddiy qutichalar va daraxtlar yashiriladi.
+  async #loadAtrof(list) {
+    if (!list.length) return;
+    const results = await loadNeighbors(list);
+    if (this.disposed) return;
+    const placed = results.filter((r) => r.ok);
+    for (const r of placed) {
+      this.site.add(r.object);
+      const zone = r.box.clone().expandByScalar(5);
+      for (const nb of this.site.userData.neighbors.children) {
+        if (nb.userData.rect && zone.intersectsBox(nb.userData.rect)) nb.visible = false;
+      }
+      this.site.traverse((o) => {
+        if (!o.isMesh || o.parent !== this.site || o === r.object) return;
+        const p = o.position;
+        if (p.y > 0.3 && p.y < 4 && zone.containsPoint(new THREE.Vector3(p.x, 1, p.z))) o.visible = false;
+      });
+    }
+    this.site.userData.fadeList = null;
+    this.siteApplied = null;
+    this.siteCasts = null;
+    setGroupOpacity(this.site, this.siteVis);
+    this.atrofInfo = results.map(({ ok, name, error }) => ({ ok, name, error }));
+    this.h.onModelInfo({ atrof: this.atrofInfo });
   }
 
   #naturalY(f) {

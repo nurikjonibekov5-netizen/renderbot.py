@@ -48,3 +48,24 @@ Agar modelda ro'yxatdagi biror xona topilmasa yoki ortiqcha xona bo'lsa, chap pa
 
 Sinov uchun namunaviy fayl yasash (dasturchilar uchun):
 `node scripts/namuna-glb.js 2 models/qavat_2.glb --santimetr`
+
+## Klinika atrofidagi binolar (`models/atrof/`)
+
+Atrofdagi binolar (qo'shni uylar, zavod, minora) shu papkada turadi. Ular faqat chiroy uchun, xodimlar bilan bog'liq emas.
+
+| Fayl | Bino |
+|---|---|
+| `uch_qavatli.glb` | 3 qavatli bino (klinika orqasida) |
+| `majmua.glb` | Tutash korpusli majmua (chap tomonda) |
+| `minora.glb` | Baland minora (orqa-chapda) |
+| `texnik_bino.glb` | G'ishtli texnik bino, ikki mo'rili (orqa-o'ngda) |
+
+Qaysi bino qayerda turishi `joylashuv.json` faylida yozilgan:
+
+- `x` - o'ngga (+) yoki chapga (−), metrda; klinika markazi 0;
+- `z` - oldinga (+) yoki orqaga (−), metrda;
+- `burilish` - gradusda (masalan 90).
+
+Yangi bino qo'shish: GLB faylni shu papkaga qo'ying va `joylashuv.json` dagi ro'yxatga yangi qator qo'shing.
+Model qaysi joyga qo'yilsa, o'sha joydagi oddiy oq qutichalar va daraxtlar o'zi olib tashlanadi.
+Ko'p mayda bo'lakdan iborat modellar yuklashda avtomatik birlashtiriladi, shuning uchun sayt sekinlashmaydi.

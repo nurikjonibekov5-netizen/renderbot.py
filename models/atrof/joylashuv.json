@@ -1,0 +1,33 @@
+{
+  "izoh": "Klinika atrofidagi binolar. x va z - metrda (klinika markazi 0,0; x o'ngga, z oldinga), burilish - gradusda.",
+  "binolar": [
+    {
+      "fayl": "uch_qavatli.glb",
+      "nomi": "3 qavatli bino",
+      "x": 0,
+      "z": -34,
+      "burilish": 0
+    },
+    {
+      "fayl": "majmua.glb",
+      "nomi": "Tutash korpusli majmua",
+      "x": -60,
+      "z": -4,
+      "burilish": 0
+    },
+    {
+      "fayl": "minora.glb",
+      "nomi": "Baland minora",
+      "x": -64,
+      "z": -50,
+      "burilish": 0
+    },
+    {
+      "fayl": "texnik_bino.glb",
+      "nomi": "G'ishtli texnik bino",
+      "x": 18,
+      "z": -66,
+      "burilish": 0
+    }
+  ]
+}

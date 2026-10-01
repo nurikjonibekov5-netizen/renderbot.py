@@ -311,10 +311,12 @@ async function main() {
   let demoServer;
   if (existsSync(join(demoDir, 'index.html'))) {
     demoServer = createServer((req, res) => {
-      const p = new URL(req.url, 'http://x').pathname;
-      const file = join(demoDir, p === '/' ? 'index.html' : p);
-      if (!file.startsWith(demoDir) || !existsSync(file)) { res.writeHead(404); return res.end(); }
-      const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+      const p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      // GitHub sahifasidagi kabi: atrofdagi binolar models/ papkasidan olinadi.
+      const base = p.startsWith('/models/') ? ROOT : demoDir;
+      const file = join(base, p === '/' ? 'index.html' : p);
+      if (!file.startsWith(base) || !existsSync(file)) { res.writeHead(404); return res.end(); }
+      const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.glb': 'model/gltf-binary' };
       res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' });
       res.end(readFileSync(file));
     });

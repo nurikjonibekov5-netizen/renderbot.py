@@ -1,7 +1,7 @@
 // Server: ekranga real vaqtda ma'lumot beradi, tarixni bazaga yozadi,
 // kelajakda xonalardagi qabul qiluvchilardan signal qabul qiladi.
 import { createServer } from 'node:http';
-import { existsSync, statSync, readdirSync, createReadStream, mkdirSync } from 'node:fs';
+import { existsSync, statSync, readdirSync, readFileSync, createReadStream, mkdirSync } from 'node:fs';
 import { join, extname, normalize, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
@@ -9,6 +9,7 @@ import { loadClinicFromDisk } from '../shared/load-node.js';
 import { clinicToJson } from '../shared/clinic.js';
 import { ClinicEngine, SPEEDS } from '../shared/engine.js';
 import { autoLayout } from '../shared/layout.js';
+import { atrofList } from '../shared/atrof.js';
 import { dayStart, dayKey, DAY, HOUR } from '../shared/time.js';
 import { loadSettings, resolvePassword } from './settings.js';
 import { HistoryDb } from './db.js';
@@ -38,6 +39,17 @@ export function listModels(dir) {
   for (const f of readdirSync(dir)) {
     const m = MODEL_RE.exec(f);
     if (m) out[Number(m[1])] = `/models/${encodeURIComponent(f)}?v=${Math.round(statSync(join(dir, f)).mtimeMs)}`;
+  }
+  // Atrofdagi binolar: models/atrof/joylashuv.json da sanab o'tilgan GLB fayllar.
+  const atrofDir = join(dir, 'atrof');
+  const placement = join(atrofDir, 'joylashuv.json');
+  if (existsSync(placement)) {
+    try {
+      out.atrof = atrofList(JSON.parse(readFileSync(placement, 'utf8')), (f) => `/models/atrof/${encodeURIComponent(f)}`)
+        .filter((b) => existsSync(join(atrofDir, decodeURIComponent(b.url.split('/').pop()))));
+    } catch {
+      out.atrof = [];
+    }
   }
   return out;
 }

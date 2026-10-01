@@ -34,18 +34,23 @@ export function setGroupOpacity(group, k) {
   if (!group.userData.fadeList) {
     const list = [];
     group.traverse((o) => {
-      if (o.isMesh) {
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of mats) if (!list.some((x) => x.m === m)) list.push({ m, base: m.opacity ?? 1, depthWrite: m.depthWrite, transparent: m.transparent });
+      if (!o.isMesh) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (list.includes(m)) continue;
+        // Asl qiymatlar materialning o'zida bir marta saqlanadi: ro'yxat qayta tuzilsa ham yo'qolmaydi.
+        if (!m.userData.fadeBase) m.userData.fadeBase = { opacity: m.opacity ?? 1, depthWrite: m.depthWrite, transparent: m.transparent };
+        list.push(m);
       }
     });
     group.userData.fadeList = list;
   }
-  for (const x of group.userData.fadeList) {
-    x.m.opacity = x.base * k;
+  for (const m of group.userData.fadeList) {
+    const b = m.userData.fadeBase;
+    m.opacity = b.opacity * k;
     const fading = k < 0.999;
-    x.m.transparent = x.transparent || fading;
-    x.m.depthWrite = fading ? false : x.depthWrite;
+    m.transparent = b.transparent || fading;
+    m.depthWrite = fading ? false : b.depthWrite;
   }
   group.traverse((o) => {
     if (o.isCSS2DObject) {

@@ -11,6 +11,8 @@ import staffCsv from '../../data/namuna_ochiq_xodimlar.csv?raw';
 import rolesCsv from '../../data/lavozimlar.csv?raw';
 import demoRoomsCsv from '../../data/namuna_xonalar.csv?raw';
 import demoStaffCsv from '../../data/namuna_xodimlar.csv?raw';
+import atrofJson from '../../models/atrof/joylashuv.json';
+import { atrofList } from '../../shared/atrof.js';
 
 export class DemoSource {
   constructor() {
@@ -23,7 +25,9 @@ export class DemoSource {
     onConfig({
       ...clinicToJson(clinic),
       layout: autoLayout(clinic),
-      models: {},
+      // Atrofdagi binolar sayt yonidagi models/atrof/ papkasidan yuklanadi (GitHub sahifasida bor).
+      // Fayl kompyuterdan ochilganda ular yuklanmaydi va oddiy bloklar ko'rinadi.
+      models: { atrof: atrofList(atrofJson, (f) => `models/atrof/${encodeURIComponent(f)}`) },
       mode: 'simulyatsiya',
       speeds: SPEEDS,
       demo: true,
