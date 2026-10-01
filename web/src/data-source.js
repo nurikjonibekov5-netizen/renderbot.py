@@ -5,7 +5,9 @@ import { buildClinic, clinicToJson } from '../../shared/clinic.js';
 import { ClinicEngine, SPEEDS } from '../../shared/engine.js';
 import { autoLayout } from '../../shared/layout.js';
 import roomsCsv from '../../data/xonalar.csv?raw';
-import staffCsv from '../../data/xodimlar.csv?raw';
+// Namunada (internetga chiqadigan faylda) haqiqiy xodimlar o'rniga soxta ismlar ishlatiladi.
+// Haqiqiy ro'yxat (data/xodimlar.csv) faqat parol bilan himoyalangan serverda o'qiladi.
+import staffCsv from '../../data/namuna_ochiq_xodimlar.csv?raw';
 import rolesCsv from '../../data/lavozimlar.csv?raw';
 import demoRoomsCsv from '../../data/namuna_xonalar.csv?raw';
 import demoStaffCsv from '../../data/namuna_xodimlar.csv?raw';

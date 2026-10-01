@@ -26,7 +26,7 @@ export function SearchBar({ staff, roles, stateById, roomById, onPick, onNotFoun
       <Icon name="search" size={17} />
       <input
         type="search"
-        placeholder="Xodimni qidiring… masalan: Dilnoza qayerda?"
+        placeholder="Xodimni qidiring: ism yoki lavozim…"
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}

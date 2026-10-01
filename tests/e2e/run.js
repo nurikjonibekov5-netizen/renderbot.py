@@ -330,7 +330,7 @@ async function main() {
       await m.page.screenshot({ path: join(SHOTS, '10-namuna-noutbuk.png') });
     });
     await step('Namunada qidiruv va panel', async () => {
-      await m.page.fill('.searchbar input', 'aziz');
+      await m.page.fill('.searchbar input', 'otabek');
       await m.page.press('.searchbar input', 'Enter');
       await m.page.waitForSelector('.emp-card h2');
       await m.page.waitForTimeout(2500);
