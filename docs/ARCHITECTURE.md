@@ -95,7 +95,7 @@ interface SceneDocument {
 ## 5. Renderer
 
 - `<Canvas>` with `frameloop="demand"` outside interactions (saves battery), `dpr={[1, 2]}` capped, shadows (PCFSoft, bias −0.0006, normalBias 0.05).
-- **Camera**: perspective, FOV 28°, default elevation ≈ 35°, azimuth 45°. `MapControls`-style: left-drag pan, right-drag orbit, wheel/pinch zoom, damping. Limits: distance 15–400 m, polar angle 10°–80° (never below ground), target clamped to the world bounds. Controls are disabled while a gizmo drag or a tool drag is active (resolves the drag-vs-orbit conflict).
+- **Camera**: perspective, FOV 28°, default elevation ≈ 35°, azimuth 45°. `MapControls`-style: left-drag pan, right-drag orbit, wheel/pinch zoom, damping. Limits: distance 15–600 m (portrait screens start further away), polar angle 10°–80° (never below ground), target clamped to the world bounds. Controls are disabled while a gizmo drag or a tool drag is active (resolves the drag-vs-orbit conflict).
 - **Picking**: R3F pointer events on entity groups. A click counts as a click only if the pointer moved < 5 px between down and up (otherwise it was a camera drag).
 - **Selection highlight**: drei `<Outlines>`/back-face hull in accent orange plus a ground bounding rectangle. Original materials are never modified.
 - **Ghost**: same geometry with a shared translucent orange (valid) / red (invalid) material.

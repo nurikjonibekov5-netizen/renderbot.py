@@ -9,7 +9,7 @@
 | 3D | Transparent sorting | Glass rendered opaque-tinted by default; `depthWrite` off only for real transparency | 2 |
 | 3D | Shadow acne / peter-panning | bias −0.0006, normalBias 0.05, tight shadow camera fitted to the scene | 1 |
 | 3D | Z-fighting (roads, markings, ground) | Fixed Y layers: ground 0, road 0.02, markings 0.04, sidewalk 0.15; `polygonOffset` on decals | 1–2 |
-| 3D | Near/far clipping | near 0.5, far 3000; controls max distance 400 | 1 |
+| 3D | Near/far clipping | near 0.5, far 3000; controls max distance 600 | 1 |
 | Editor | Click becomes camera drag / drag orbits camera | 5 px click threshold; controls disabled during gizmo/tool drags | 1 |
 | Editor | Delete removes wrong entity; stale selection | Delete acts on `selectedId` only; selection cleared when entity disappears (undo/delete) | 1 |
 | Editor | Undo/redo corruption | Pure immutable commands; unit tests for every command round-trip | 1 |
