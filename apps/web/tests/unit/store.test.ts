@@ -63,7 +63,7 @@ describe('editor store', () => {
   });
 
   it('duplicate gets a unique id and a free spot', () => {
-    const a = s().placeAsset('prim:building-white', 0, 0)!;
+    const a = s().placeAsset('prim:building-brick', 0, 0)!;
     const b = s().duplicateSelected()!;
     expect(b).not.toBe(a);
     expect(new Set(ids()).size).toBe(2);

@@ -20,3 +20,15 @@ Root npm workspaces would hoist and share `node_modules` with the old app and ri
 **D-9 Hosting:** the editor is built into `/editor/` (relative base) so GitHub Pages serves it next to the old demo without changing Pages settings.
 
 **D-10 UI language: Uzbek labels** (the user's language), code and docs in English.
+
+**D-11 Asset pipeline:** source GLBs live in `apps/web/assets-src/buildings/` (+ `assets.json` for labels and overrides); `npm run assets` normalises them into `public/assets/buildings/` with a `manifest.json` (size, fixes, warnings). Nodes are merged per material (thousands of nodes → ≤ 10 meshes) because the supplied models were 300–1,500 nodes each.
+
+**D-12 New entity type `lot`** (paved / parking / plaza), added to the schema without a version bump: older documents never contain it, and validation drops unknown types.
+
+**D-13 Procedural buildings are merged vertex-coloured geometry** (1–2 draw calls each) rather than many meshes; identical props share cached geometry.
+
+**D-14 `?still` mode** freezes traffic and skips the construction animation, so screenshots and e2e tests are deterministic.
+
+**D-15 Interaction e2e tests use a small fixture scene;** the full sample city is used for loading, GLB checks and screenshots. The dense city has no free, unoccluded ground near the centre of the screen.
+
+**D-16 The clinic is a parametric stand-in** (`prim:clinic`: chamfered corner entrance, pilasters, rooftop plant), built from image 6. When the real clinic GLB arrives, it goes into `assets-src/buildings/` and the sample entity's `assetId` switches to `glb:<name>`.

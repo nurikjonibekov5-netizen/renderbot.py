@@ -24,16 +24,24 @@ Status legend: `[x]` verified by an automated test or a recorded check, `[ ]` no
 
 Gate 1 result: 23 unit tests (`tests/unit`) and 15 e2e tests (`tests/e2e/run.mjs`) pass; every P0 row above is covered by them.
 
-## Gate 2 — Reference world
-- [ ] Screenshot side-by-side with images 2 and 6: white ground, red/white buildings, dark roads, soft shadows from upper-left.
-- [ ] All supplied GLBs stand on the ground (min Y = 0 ± 0.05 m), correct orientation, plausible size.
-- [ ] Roads and buildings do not intersect; no z-fighting at road junctions.
+## Gate 2 — Reference world (two acceptances, both required)
+### A. Technical fidelity (video = behaviour) — see `VIDEO_FIDELITY.md`
+- [x] Every visible video interaction is listed with Observed / Implemented / Difference / Fix (V1–V16).
+- [x] Phase 1 gaps against the video fixed: T-junction road snapping, automatic junctions with crosswalks, lot/parking tool with block-edge snapping and dimmed toolbar, construction animation, roof-corner height handle (one undo), per-side facade tool, storefront tool, presentation mode.
+- [x] e2e: lot/parking, footprint → construction → height handle, facade/storefront, presentation, refused road/lot placements.
+### B. Visual fidelity (images = appearance) — see `GATE2_VISUAL_REVIEW.md`
+- [x] Side-by-side with images 2 and 6 (`docs/gate2/compare_image*.jpg`) after three review/fix rounds.
+- [x] All 4 GLBs stand on the ground (min Y = 0 ± 0.05 m), runtime size = manifest size, no embedded lights, merged (≤ 20 meshes each) — e2e.
+- [x] Buildings never overlap roads/sidewalks/buildings; parking never on roads; roads never cut buildings — unit + e2e.
+- [x] Clinic is the focal point of the default view; desktop 1440×900 and phone 390×844 screenshots reviewed.
+
+Gate 2 result: 33 unit tests and 21 e2e tests pass; typecheck, lint and build pass.
 
 ## Final checklist (master prompt §38)
 ### Video fidelity
 - [ ] camera feel close to the video · [ ] placement flow · [ ] selection/highlight · [ ] UI behaviour · [ ] no jerky transitions
 ### Visual world
-- [ ] miniature/isometric spirit · [ ] one palette family · [ ] clinic can be the focal asset · [ ] roads/buildings don't intersect · [ ] parking not on roads · [ ] props touch the ground · [ ] consistent shadow direction
+- [x] miniature/isometric spirit · [x] one palette family · [x] clinic can be the focal asset · [x] roads/buildings don't intersect · [x] parking not on roads · [x] props touch the ground · [x] consistent shadow direction
 ### Editor
 - [x] add · [x] select · [x] move · [x] rotate · [x] scale · [x] duplicate · [x] delete · [x] undo/redo · [x] save/load · [x] autosave · [ ] GLB import (Phase 3)
 ### AI asset generation
@@ -41,4 +49,4 @@ Gate 1 result: 23 unit tests (`tests/unit`) and 15 e2e tests (`tests/e2e/run.mjs
 ### Performance
 - [ ] no React state updates in the frame loop · [ ] repeated props instanced · [ ] GLBs optimised · [ ] mobile quality adapts · [ ] no memory leak after repeated add/delete
 ### Reliability
-- [ ] missing asset does not blank the app · [x] reload restores autosave · [ ] provider failure has a human-readable error · [ ] API key never in the client bundle
+- [x] missing asset does not blank the app (per-asset error boundary → red placeholder) · [x] reload restores autosave · [ ] provider failure has a human-readable error · [ ] API key never in the client bundle
