@@ -44,6 +44,22 @@ Fixes:
 - Warm sun (`#FFEEDA`) with a cool sky fill, and a sky-haze gradient.
 - Traffic is now shown frozen in screenshot mode.
 
+### Round 4 (user: "still about 40% missing — render quality")
+Differences found:
+1. The render looked flat next to the path-traced references: weak shadows, no contact darkening, no miniature depth of field.
+2. The clinic lacked the deep pilasters, tall narrow windows and fifth storey of image 6.
+3. The Zlín blocks were too low and too sparse compared with image 2; there were no stair cores, no dark roofs on large blocks and no chimney.
+4. The rail yard had no switches, there were no snow-covered bushes, and the pipe bridge did not pass behind the clinic.
+
+Fixes:
+- Stronger cool-blue sun shadows with softened edges.
+- Baked ambient occlusion: darker wall feet plus soft contact shadows under buildings, trees and cars.
+- Tilt-shift blur at the top and bottom of the view (CSS backdrop filter: free on phones), stronger in presentation mode.
+- Clinic facade redone: deep pilasters, tall windows with sills and lintels, a dark ground-floor band, a cornice, a framed corner entrance, and 5 storeys.
+- Zlín blocks raised to 5–9 storeys, with protruding red-brick stair cores and dark roofs on large blocks.
+- Six extra blocks, a plant chimney, rail switches and snow bushes; a pipe bridge now runs behind the clinic.
+- A post-processing attempt (SSAO + tone mapping) was dropped because it removed all shadow maps (DECISIONS D-17).
+
 ## Gate 2 checklist (visual)
 
 | Requirement | Status | Evidence |
@@ -62,8 +78,7 @@ Fixes:
 | 12. Alive without heavy simulation | ✅ | lane traffic with signal stops and car gaps (instanced, no React state per frame) |
 
 ## Known remaining differences (accepted for Gate 2, tracked for later phases)
-- No rail switches or level crossings; tracks are straight.
-- No tall chimney tower or snow-cloud mounds as in the top of image 6.
-- No tilt-shift depth of field or ambient occlusion; the reference renders are path-traced (Phase 6, optional, performance-gated).
+- Rail switches are simple straight diagonals; there are no level crossings.
+- No true global illumination (snow bounce light) or bevelled edge highlights; the references are path-traced offline renders. Approximated with baked AO, contact shadows and tilt-shift.
 - Facades restyle per side, not per vertical segment (Phase 3).
 - The clinic is a parametric stand-in until the real clinic GLB is supplied; it can be swapped through the catalog.

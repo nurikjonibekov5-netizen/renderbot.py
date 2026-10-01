@@ -41,9 +41,11 @@ export const CATALOG: CatalogItem[] = [
   { id: 'prim:tree-pine', label: "Qarag'ay", hint: "Yashil qarag'ay, qor bilan", icon: 'pine', type: 'tree', group: 'trees' },
   { id: 'prim:tree-round', label: 'Daraxt', hint: 'Dumaloq qorli daraxt', icon: 'round', type: 'tree', group: 'trees' },
   { id: 'prim:tree-box', label: "To'rtburchak", hint: "Yashil kesilgan daraxt (klinika oldida)", icon: 'boxtree', type: 'tree', group: 'trees' },
+  { id: 'prim:snow-bush', label: 'Qorli buta', hint: 'Qor bosgan buta', icon: 'round', type: 'prop', group: 'trees' },
   { id: 'prim:hedge', label: 'Butazor', hint: "Yashil to'siq", icon: 'hedge', type: 'prop', group: 'trees' },
   { id: 'prim:lamp', label: 'Chiroq', hint: "Ko'cha chirog'i", icon: 'lamp', type: 'prop', group: 'street' },
   { id: 'prim:traffic-light', label: 'Svetofor', hint: 'Chorraha svetofori', icon: 'traffic', type: 'prop', group: 'street' },
+  { id: 'prim:chimney', label: "Mo'ri", hint: "Zavodning baland mo'risi", icon: 'factory', type: 'prop', group: 'street' },
   { id: 'prim:car', label: 'Mashina', hint: 'Turgan mashina', icon: 'car', type: 'vehicle', group: 'street', metadata: { color: 0 } },
 ];
 

@@ -98,7 +98,8 @@ function whiteFacade(b: GeoBuilder, s: Seg, o: FacadeOpts) {
     entrance(put, L, o);
     return;
   }
-  const n = bays(L, 3.2);
+  // neo-classical white facade (image 6): deep pilasters, tall narrow windows, dark ground-floor band, cornice
+  const n = bays(L, 2.9);
   const m = L / n;
   for (let i = 0; i < o.floors; i += 1) {
     const y0 = i * o.storey;
@@ -108,17 +109,25 @@ function whiteFacade(b: GeoBuilder, s: Seg, o: FacadeOpts) {
     }
     put(L / 2, 0, y0 + o.storey / 2, L, o.storey, 0.24, COL.white);
     const ground = i === 0;
-    const wh = ground ? o.storey * 0.72 : o.storey * 0.56;
-    const wy = ground ? y0 + 0.15 + wh / 2 : y0 + o.storey * 0.5;
+    const wh = ground ? o.storey * 0.74 : o.storey * 0.62;
+    const wy = ground ? y0 + 0.2 + wh / 2 : y0 + o.storey * 0.52;
     for (let j = 0; j < n; j += 1) {
-      put(m * (j + 0.5), 0.07, wy, m * 0.46, wh, 0.12, COL.windowDark);
-      put(m * (j + 0.5), 0.12, wy - wh / 2 - 0.06, m * 0.56, 0.14, 0.2, COL.whiteShade);
+      put(m * (j + 0.5), 0.06, wy, m * 0.36, wh, 0.14, COL.windowDark);
+      put(m * (j + 0.5), 0.16, wy - wh / 2 - 0.08, m * 0.5, 0.16, 0.26, COL.whiteShade);
+      if (!ground) put(m * (j + 0.5), 0.12, wy + wh / 2 + 0.12, m * 0.44, 0.14, 0.18, COL.whiteShade);
     }
-    if (ground) put(L / 2, 0.14, y0 + o.storey - 0.25, L + 0.05, 0.32, 0.3, COL.baseDark);
-    else put(L / 2, 0.1, y0 + 0.1, L + 0.04, 0.22, 0.28, COL.whiteShade);
+    if (ground) {
+      put(L / 2, 0.2, y0 + o.storey - 0.22, L + 0.1, 0.44, 0.42, COL.baseDark);
+      put(L / 2, 0.08, 0.25, L + 0.02, 0.5, 0.3, COL.whiteShade);
+    }
   }
-  for (let j = 0; j <= n; j += 1) put(Math.min(L - 0.22, Math.max(0.22, m * j)), 0.16, H / 2, 0.44, H, 0.36, COL.white);
-  put(L / 2, 0.22, H + 0.1, L + 0.5, 0.55, 0.62, COL.white);
+  for (let j = 0; j <= n; j += 1) {
+    const x = Math.min(L - 0.28, Math.max(0.28, m * j));
+    put(x, 0.3, H / 2 + o.storey / 2, 0.5, H - o.storey, 0.62, COL.white);
+    put(x, 0.36, o.storey * 0.5, 0.62, o.storey, 0.72, COL.white);
+  }
+  put(L / 2, 0.36, H + 0.05, L + 0.7, 0.5, 0.86, COL.white);
+  put(L / 2, 0.22, H - 0.35, L + 0.4, 0.3, 0.6, COL.whiteShade);
 }
 
 /** Corner entrance of the clinic: two-storey dark portal, canopy, steps, sign. */
@@ -126,17 +135,18 @@ function entrance(put: ReturnType<typeof along>['put'], L: number, o: FacadeOpts
   const H = o.floors * o.storey;
   const portalH = o.storey * 2 - 0.4;
   put(L / 2, 0, H / 2, L, H, 0.3, COL.white);
-  put(L / 2, 0.06, portalH / 2 + 0.1, L - 2.2, portalH, 0.2, COL.windowDark);
+  put(L / 2, 0.08, portalH / 2 + 0.1, L - 2.4, portalH, 0.2, COL.windowDark);
   put(L / 2, 0.14, portalH / 2 + 0.1, 0.12, portalH, 0.22, COL.baseDark);
-  put(0.55, 0.3, H / 2, 1.1, H, 0.5, COL.white);
-  put(L - 0.55, 0.3, H / 2, 1.1, H, 0.5, COL.white);
+  // two strong corner piers frame the recessed entrance bay
+  put(0.65, 0.55, H / 2, 1.3, H, 1.2, COL.white);
+  put(L - 0.65, 0.55, H / 2, 1.3, H, 1.2, COL.white);
   put(L / 2, 0.9, o.storey * 2 + 0.1, L + 0.6, 0.45, 2.2, COL.white);
   put(L / 2, 0.12, o.storey * 1.3, L * 0.5, 0.35, 0.22, COL.sign, true);
   for (let i = 2; i < o.floors; i += 1) {
     const y0 = i * o.storey;
-    put(L * 0.3, 0.14, y0 + o.storey * 0.5, L * 0.22, o.storey * 0.56, 0.12, COL.windowDark);
-    put(L * 0.7, 0.14, y0 + o.storey * 0.5, L * 0.22, o.storey * 0.56, 0.12, COL.windowDark);
-    put(L / 2, 0.22, y0 + 0.1, L - 1.8, 0.2, 0.2, COL.whiteShade);
+    put(L * 0.36, 0.14, y0 + o.storey * 0.52, L * 0.2, o.storey * 0.62, 0.12, COL.windowDark);
+    put(L * 0.64, 0.14, y0 + o.storey * 0.52, L * 0.2, o.storey * 0.62, 0.12, COL.windowDark);
+    put(L / 2, 0.2, y0 + 0.1, L - 2.4, 0.2, 0.3, COL.whiteShade);
   }
   put(L / 2, 1.2, 0.12, L - 1.6, 0.24, 2.6, COL.baseDark);
   put(L / 2, 2.0, 0.06, L - 0.6, 0.12, 4.2, COL.baseDark);
@@ -236,6 +246,25 @@ function roof(b: GeoBuilder, segs: Seg[], w: number, d: number, H: number, rng: 
   if (w * d > 200 && rng() < 0.7) b.box(3.2, 2.2, 3.2, (rng() - 0.5) * w * 0.5, H + 1.45, (rng() - 0.5) * d * 0.4, COL.parapet);
 }
 
+/**
+ * Zlín stair cores (images 2 and 6): narrow red-brick towers with a vertical glass strip,
+ * standing proud of the long facades and rising above the roof.
+ */
+function stairTowers(b: GeoBuilder, m: BuildingMeta, H: number) {
+  const tw = 3.8;
+  const td = 2.6;
+  const th = H + 2.2;
+  for (const x of m.width >= 44 ? [-m.width * 0.3, m.width * 0.3] : [m.width * 0.22]) {
+    for (const side of [1, -1]) {
+      const z = side * (m.depth / 2 + td / 2 - 0.2);
+      b.box(tw, th, td, x, th / 2, z, COL.brick);
+      b.box(tw + 0.3, 0.4, td + 0.3, x, th + 0.2, z, COL.frame);
+      b.box(1.1, H - 1.5, 0.12, x, (H - 1.5) / 2 + 1.2, z + side * (td / 2 + 0.02), COL.glass);
+      for (let y = 3; y < H; y += 3.3) b.box(1.3, 0.12, 0.2, x, y, z + side * (td / 2 + 0.05), COL.frame);
+    }
+  }
+}
+
 /** Merged geometry for a procedural building; cached by its parameters and id (the seed). */
 export function buildingShape(id: string, m: BuildingMeta): BuiltShape {
   const key = `bld|${id}|${m.width}|${m.depth}|${m.floors}|${m.storeyHeight}|${m.style}|${JSON.stringify(m.faces ?? {})}|${m.ground ?? ''}|${m.kind ?? ''}|${m.roof ?? ''}`;
@@ -257,7 +286,10 @@ export function buildingShape(id: string, m: BuildingMeta): BuiltShape {
         litChance: 0.2,
       });
     }
+    if (!clinic && m.style === 'brick' && m.width >= 26) stairTowers(b, m, H);
     roof(b, segs, m.width, m.depth, H, rng, clinic, m.roof === 'dark');
+    // baked AO: the bottom 3 m of the walls darken towards the ground; roof stays clean
+    b.shade((_x, y) => (y > 3 ? 1 : 0.78 + 0.22 * Math.max(0, y) / 3));
     return b.result();
   });
 }

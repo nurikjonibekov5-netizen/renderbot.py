@@ -7,9 +7,10 @@ import { assetUrl, manifestById, MANIFEST } from '../../lib/assets.ts';
 import { GLOW_MAT, SOLID_MAT, type BuiltShape } from '../build/builder.ts';
 import { buildingShape } from '../build/buildings.ts';
 import {
-  boxTree, car, coneTree, hedge, lamp, lotShape, pineTree, pipeBridgeShape, railShape, roundTree, trafficLight,
+  boxTree, car, chimney, coneTree, hedge, lamp, lotShape, pineTree, pipeBridgeShape, railShape, roundTree, snowBush, trafficLight,
 } from '../build/props.ts';
 import { roadShape, type Crossing } from '../build/roads.ts';
+import { ContactShadow } from '../build/contact.tsx';
 
 interface ShapeProps {
   entity: SceneEntity;
@@ -99,8 +100,10 @@ class AssetBoundary extends Component<{ entity: SceneEntity; children: ReactNode
 export function EntityShape({ entity, override, crossings, previewFloors }: ShapeProps) {
   if (isGlb(entity)) {
     if (!manifestById.has(entity.assetId!)) return <BoundsBox entity={entity} material={brokenMat} />;
+    const size = manifestById.get(entity.assetId!)!.size;
     return (
       <AssetBoundary entity={entity}>
+        {!override && <ContactShadow width={size[0]} depth={size[2]} pad={3.5} />}
         <Suspense fallback={<BoundsBox entity={entity} material={override ?? placeholderMat} />}>
           <GlbModel entity={entity} override={override} />
         </Suspense>
@@ -111,7 +114,12 @@ export function EntityShape({ entity, override, crossings, previewFloors }: Shap
     case 'building': {
       const m = buildingMeta(entity);
       if (previewFloors) m.floors = previewFloors;
-      return <Built shape={buildingShape(override ? 'ghost' : entity.id, m)} override={override} />;
+      return (
+        <>
+          {!override && <ContactShadow width={m.width} depth={m.depth} pad={3.5} />}
+          <Built shape={buildingShape(override ? 'ghost' : entity.id, m)} override={override} />
+        </>
+      );
     }
     case 'road': {
       const { length, width } = roadMeta(entity);
@@ -120,19 +128,32 @@ export function EntityShape({ entity, override, crossings, previewFloors }: Shap
     case 'lot':
       return <Built shape={lotShape(override ? 'ghost' : entity.id, lotMeta(entity))} override={override} cast={false} />;
     case 'vehicle':
-      return <Built shape={car(Number(entity.metadata?.color) || 0)} override={override} />;
+      return (
+        <>
+          {!override && <ContactShadow width={4} depth={1.6} pad={0.6} strength={0.8} />}
+          <Built shape={car(Number(entity.metadata?.color) || 0)} override={override} />
+        </>
+      );
     case 'tree':
-      switch (entity.assetId) {
-        case 'prim:tree-round': return <Built shape={roundTree()} override={override} />;
-        case 'prim:tree-pine': return <Built shape={pineTree()} override={override} />;
-        case 'prim:tree-box': return <Built shape={boxTree()} override={override} />;
-        default: return <Built shape={coneTree()} override={override} />;
-      }
+      return (
+        <>
+          {!override && <ContactShadow width={1.2} depth={1.2} pad={1.2} strength={0.7} />}
+          <TreeShape entity={entity} override={override} />
+        </>
+      );
     default:
       switch (entity.assetId) {
         case 'prim:hedge': return <Built shape={hedge()} override={override} />;
         case 'prim:lamp': return <Built shape={lamp()} override={override} />;
         case 'prim:traffic-light': return <Built shape={trafficLight()} override={override} />;
+        case 'prim:snow-bush': return <Built shape={snowBush()} override={override} />;
+        case 'prim:chimney':
+          return (
+            <>
+              {!override && <ContactShadow width={8} depth={8} pad={3} />}
+              <Built shape={chimney()} override={override} />
+            </>
+          );
         case 'prim:rail':
           return <Built shape={railShape(entity.id, Number(entity.metadata?.length) || 100, Number(entity.metadata?.tracks) || 3)} override={override} />;
         case 'prim:pipe-bridge':
@@ -140,6 +161,15 @@ export function EntityShape({ entity, override, crossings, previewFloors }: Shap
         default:
           return <BoundsBox entity={entity} material={override ?? placeholderMat} />;
       }
+  }
+}
+
+function TreeShape({ entity, override }: { entity: SceneEntity; override?: THREE.Material }) {
+  switch (entity.assetId) {
+    case 'prim:tree-round': return <Built shape={roundTree()} override={override} />;
+    case 'prim:tree-pine': return <Built shape={pineTree()} override={override} />;
+    case 'prim:tree-box': return <Built shape={boxTree()} override={override} />;
+    default: return <Built shape={coneTree()} override={override} />;
   }
 }
 

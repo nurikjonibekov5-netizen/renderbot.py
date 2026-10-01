@@ -9,16 +9,17 @@ export function Lights({ mobile }: { mobile: boolean }) {
   return (
     <>
       {/* cool sky fill + warm low sun: the warm/cool split of images 2 and 6 */}
-      <hemisphereLight args={['#EAF1FF', PALETTE.shadow, 1.5]} />
-      <ambientLight intensity={0.3} />
+      <hemisphereLight args={['#E4ECFF', PALETTE.shadow, 1.2]} />
+      <ambientLight intensity={0.22} color="#DCE6F5" />
       <directionalLight
         position={[-90, 170, 110]}
-        intensity={2.3}
-        color="#FFEEDA"
+        intensity={2.9}
+        color="#FFF3E6"
         castShadow
         shadow-mapSize={[map, map]}
-        shadow-bias={-0.0006}
-        shadow-normalBias={0.05}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.04}
+        shadow-radius={2.5}
         shadow-camera-left={-size}
         shadow-camera-right={size}
         shadow-camera-top={size}

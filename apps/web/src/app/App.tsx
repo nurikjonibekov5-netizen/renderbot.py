@@ -55,6 +55,9 @@ export function App() {
         <ErrorBoundary onReset={resetScene}>
           <SceneCanvas ortho={ORTHO} debug={DEBUG} mobile={MOBILE} onContextLost={setContextLost} />
         </ErrorBoundary>
+        {/* miniature tilt-shift (video): blur the top and bottom bands of the view, done by the browser compositor */}
+        <div className="tiltshift top" aria-hidden="true" />
+        <div className="tiltshift bottom" aria-hidden="true" />
         <ToolHint />
         <Inspector />
         {hint && <Hint onClose={closeHint} />}

@@ -84,6 +84,20 @@ export class GeoBuilder {
       new THREE.Vector3(x, y, z), new THREE.Quaternion(), new THREE.Vector3(r, r * sy, r)), color);
   }
 
+  /**
+   * Baked ambient occlusion: multiplies vertex colours by `f(x, y, z)` (0…1).
+   * Used to darken the foot of facades and the corners where walls meet the ground.
+   */
+  shade(f: (x: number, y: number, z: number) => number): this {
+    for (let i = 0; i < this.pos.length; i += 3) {
+      const k = f(this.pos[i]!, this.pos[i + 1]!, this.pos[i + 2]!);
+      this.col[i] = this.col[i]! * k;
+      this.col[i + 1] = this.col[i + 1]! * k;
+      this.col[i + 2] = this.col[i + 2]! * k;
+    }
+    return this;
+  }
+
   result(): BuiltShape {
     return { solid: this.build(), glow: this.glowB ? this.glowB.build() : null };
   }

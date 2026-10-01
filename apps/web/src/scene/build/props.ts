@@ -45,6 +45,27 @@ export const boxTree = () => cachedShape('tree-box', () => {
   return b.result();
 });
 
+/** Snow-covered bush cluster (the white blobs of images 2 and 6). */
+export const snowBush = () => cachedShape('snow-bush', () => {
+  const b = new GeoBuilder();
+  b.ico(1.3, 0, 0.8, 0, COL.snow, 0.75);
+  b.ico(0.95, 1.2, 0.6, 0.4, COL.snowShade, 0.7);
+  b.ico(0.85, -1.0, 0.55, -0.5, COL.snow, 0.75);
+  b.ico(0.7, 0.3, 0.45, -1.1, COL.snow, 0.7);
+  return b.result();
+});
+
+/** Tall plant chimney: concrete shaft on a red-brick base (top of image 6, image 2). */
+export const chimney = () => cachedShape('chimney', () => {
+  const b = new GeoBuilder();
+  b.box(8, 9, 8, 0, 4.5, 0, COL.brick);
+  b.box(8.4, 0.6, 8.4, 0, 9.3, 0, COL.frame);
+  b.geometry(new THREE.CylinderGeometry(1.6, 2.6, 40, 20), new THREE.Matrix4().makeTranslation(0, 29.6, 0), COL.whiteShade);
+  b.cylinder(1.75, 1.2, 0, 49.6, 0, COL.brick, 20);
+  b.cylinder(1.3, 0.2, 0, 50.25, 0, COL.black, 20);
+  return b.result();
+});
+
 export const hedge = () => cachedShape('hedge', () => {
   const b = new GeoBuilder();
   b.box(4, 1.1, 1.2, 0, 0.55, 0, COL.hedge);
@@ -148,6 +169,19 @@ export function railShape(id: string, length: number, tracks: number): BuiltShap
     const gap = 5;
     const width = tracks * gap + 2;
     b.box(length, 0.12, width, 0, 0.06, 0, COL.snowShade);
+    // switches: short diagonal tracks joining neighbouring tracks (image 6)
+    for (let t = 0; t + 1 < tracks; t += 1) {
+      const z0 = -((tracks - 1) * gap) / 2 + t * gap;
+      for (const xs of [-length * 0.32, length * 0.18]) {
+        const len = Math.hypot(18, gap);
+        const rot = Math.atan2(-gap, 18);
+        const cx = xs + (t % 2 ? 24 : 0);
+        b.box(len, 0.1, 3.0, cx, 0.165, z0 + gap / 2, COL.ballast, rot);
+        for (const o of [-0.72, 0.72]) {
+          b.box(len, 0.16, 0.12, cx - Math.sin(rot) * o, 0.37, z0 + gap / 2 + Math.cos(rot) * o, COL.rail, rot);
+        }
+      }
+    }
     for (let t = 0; t < tracks; t += 1) {
       const z = -((tracks - 1) * gap) / 2 + t * gap;
       b.box(length, 0.1, 3.2, 0, 0.17, z, COL.ballast);

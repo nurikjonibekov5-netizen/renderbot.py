@@ -32,3 +32,5 @@ Root npm workspaces would hoist and share `node_modules` with the old app and ri
 **D-15 Interaction e2e tests use a small fixture scene;** the full sample city is used for loading, GLB checks and screenshots. The dense city has no free, unoccluded ground near the centre of the screen.
 
 **D-16 The clinic is a parametric stand-in** (`prim:clinic`: chamfered corner entrance, pilasters, rooftop plant), built from image 6. When the real clinic GLB arrives, it goes into `assets-src/buildings/` and the sample entity's `assetId` switches to `glb:<name>`.
+
+**D-17 No post-processing pass for now.** `@react-three/postprocessing` (N8AO + SMAA) made every shadow map disappear with three 0.186, even at its lowest setting. The miniature look is built without it instead: baked vertex AO, contact-shadow decals, softened PCF shadows and a CSS backdrop-filter tilt-shift. This is also cheaper on phones. Revisit in Phase 6.

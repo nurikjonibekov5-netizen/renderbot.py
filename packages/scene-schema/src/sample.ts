@@ -67,12 +67,14 @@ export function createSampleDocument(seed = 7): SceneDocument {
   // Rotated 90° so its chamfered entrance faces the crossroads and the default camera.
   entities.push({
     id: 'bld-clinic', type: 'building', assetId: 'prim:clinic', position: [-24, 0, -28], rotation: [0, r4(Math.PI / 2), 0], scale: [1, 1, 1],
-    metadata: { width: 30, depth: 28, floors: 4, storeyHeight: 3.6, style: 'white', kind: 'clinic', name: 'Klinika' },
+    metadata: { width: 30, depth: 28, floors: 5, storeyHeight: 3.6, style: 'white', kind: 'clinic', name: 'Klinika' },
   });
+  // pipe bridge passing right behind the clinic (image 6)
+  prop('prim:pipe-bridge', -47.5, -46, 0, 'prop', { length: 95 });
   // front parking bays between the clinic and the street, and a side car park (image 6)
   lot(-31, -10, 15, 5.6, 'parking');
   lot(-51, -16.5, 18, 15, 'parking');
-  building(-77, -22, 26, 12, 4, 'brick');
+  building(-77, -22, 26, 12, 5, 'brick');
   building(-55, -36, 30, 10, 3, 'brick');
   for (let z = -15; z >= -40; z -= 5) tree('prim:tree-box', -5.6, z);
   for (let x = -14; x >= -38; x -= 7) tree('prim:tree-cone', x, -5.8);
@@ -86,7 +88,7 @@ export function createSampleDocument(seed = 7): SceneDocument {
   // --- NE block: the multi-wing complex, the long building, a car park ---
   glb('majmua', 30, -25);
   glb('uch_qavatli', 80, -20);
-  building(75, -37, 30, 10, 3, 'brick');
+  building(75, -37, 30, 10, 5, 'brick');
   lot(57.5, -22, 12, 16, 'parking');
   for (const z of [-15, -22, -29, -36]) tree('prim:tree-cone', 5.9, z);
 
@@ -105,41 +107,55 @@ export function createSampleDocument(seed = 7): SceneDocument {
   building(-150, -160, 40, 16, 3, 'brick');
   building(150, -160, 40, 16, 4, 'glass');
   building(0, -185, 50, 16, 4, 'brick');
+  prop('prim:chimney', 92, -104);
   for (let x = -185; x <= 185; x += 15) {
     if (Math.abs(x - 56) < 6) continue;
     tree('prim:tree-pine', x, -89.5);
   }
 
   // --- SE block: courtyard bars around a parking lot (image 2) ---
-  building(40, 20, 60, 12, 4, 'brick', { ground: 'storefront' });
-  building(84, 34, 12, 36, 3, 'brick');
+  building(40, 20, 60, 12, 5, 'brick', { ground: 'storefront' });
+  building(84, 34, 12, 36, 4, 'brick');
   lot(40, 46, 44, 18, 'parking');
-  building(40, 76, 50, 13, 3, 'brick');
+  building(40, 76, 50, 13, 6, 'brick', { roof: 'dark' });
   for (const [x, z] of [[75, 62], [81, 70], [88, 63], [72, 72]] as const) tree('prim:tree-cone', x, z);
 
   // --- SW block ---
-  building(-35, 20, 40, 13, 4, 'brick');
+  building(-35, 20, 40, 13, 6, 'brick', { roof: 'dark' });
   building(-80, 40, 13, 40, 3, 'glass');
-  building(-40, 72, 45, 13, 4, 'brick');
+  building(-40, 72, 45, 13, 7, 'brick', { roof: 'dark' });
   lot(-40, 45, 30, 20, 'plaza');
   for (const [x, z] of [[-48, 45], [-32, 45], [-40, 51]] as const) tree('prim:tree-round', x, z);
   for (const z of [36, 44, 52, 60]) tree('prim:tree-pine', -12, z);
 
   // --- outer blocks: keep the city dense out to the fog ---
   building(-150, -25, 50, 14, 6, 'brick', { roof: 'dark' });
-  building(-150, 30, 50, 14, 4, 'brick');
+  building(-150, 30, 50, 14, 8, 'brick', { roof: 'dark' });
   building(-140, 70, 30, 14, 3, 'brick');
   building(-180, 66, 16, 26, 5, 'glass');
   building(150, -25, 50, 14, 5, 'glass');
-  building(150, 30, 50, 14, 4, 'brick');
+  building(150, 30, 50, 14, 7, 'brick', { roof: 'dark' });
   building(150, 70, 40, 14, 3, 'brick');
-  building(-60, 128, 60, 14, 4, 'brick');
-  building(55, 128, 60, 14, 4, 'brick');
+  building(-60, 128, 60, 14, 9, 'brick', { roof: 'dark' });
+  building(55, 128, 60, 14, 8, 'brick', { roof: 'dark' });
   building(150, 130, 40, 14, 5, 'brick');
   building(-150, 128, 40, 14, 3, 'brick');
   building(-5, 165, 50, 14, 4, 'brick');
   building(110, 168, 40, 14, 4, 'glass');
   building(-120, 168, 50, 14, 4, 'brick');
+
+  // --- extra Zlín blocks to reach the density of image 2 ---
+  building(-66, 44, 10, 24, 6, 'brick');
+  building(68, 46, 8, 16, 3, 'brick');
+  building(-116, -27, 14, 12, 7, 'brick', { roof: 'dark' });
+  building(118, -30, 12, 12, 6, 'brick');
+  building(-117, 50, 12, 40, 6, 'brick', { roof: 'dark' });
+  building(118, 50, 12, 40, 5, 'brick');
+
+  // --- snow-covered bushes (the white blobs of images 2 and 6) ---
+  for (const [x, z] of [[-44, -28], [-66, -12], [68, 10], [14, 10], [-20, 10], [-60, 58], [62, 60], [-88, 88]] as const) {
+    prop('prim:snow-bush', x, z, rng() * Math.PI);
+  }
 
   // --- street furniture along the main road ---
   for (let x = -186; x <= 186; x += 24) {

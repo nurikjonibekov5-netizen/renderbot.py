@@ -58,6 +58,8 @@ const PROP_SIZE: Record<string, [number, number, number]> = {
   'prim:lamp': [1.2, 5.5, 0.6],
   'prim:traffic-light': [0.5, 4.4, 0.5],
   'prim:car': [4.2, 1.7, 1.8],
+  'prim:snow-bush': [3.2, 1.6, 2.6],
+  'prim:chimney': [8, 51, 8],
 };
 
 export function localBounds(e: SceneEntity): LocalBounds {

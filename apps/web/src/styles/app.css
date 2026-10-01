@@ -215,3 +215,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .hint { left: 8px; top: 8px; }
   .tool-hint { top: 8px; white-space: normal; width: calc(100% - 32px); text-align: center; }
 }
+
+/* tilt-shift: soft blur at the top and bottom of the 3D view (miniature look of the video and images) */
+.tiltshift {
+  position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none;
+  -webkit-backdrop-filter: blur(2.2px); backdrop-filter: blur(2.2px);
+}
+.tiltshift.top {
+  top: 0; height: 26%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.6) 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.6) 45%, transparent 100%);
+}
+.tiltshift.bottom {
+  bottom: 0; height: 20%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.5) 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.5) 45%, transparent 100%);
+}
+.presenting .tiltshift { -webkit-backdrop-filter: blur(3.5px); backdrop-filter: blur(3.5px); }
+.presenting .tiltshift.top { height: 34%; }
+.presenting .tiltshift.bottom { height: 28%; }
+@media (max-width: 700px) {
+  .tiltshift { -webkit-backdrop-filter: blur(1.4px); backdrop-filter: blur(1.4px); }
+  .tiltshift.top { height: 18%; }
+  .tiltshift.bottom { display: none; }
+}
