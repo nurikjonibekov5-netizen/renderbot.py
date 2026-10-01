@@ -13,7 +13,8 @@
     "start": "node --disable-warning=ExperimentalWarning server/index.js",
     "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.js",
     "test:e2e": "node tests/e2e/run.js",
-    "build:demo": "vite build --mode demo"
+    "build:demo": "vite build --mode demo",
+    "build:fayl": "vite build --mode demo && node scripts/bitta-fayl.js"
   },
   "dependencies": {
     "ws": "^8.22.0"
