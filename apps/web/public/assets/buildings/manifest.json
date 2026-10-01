@@ -1,0 +1,390 @@
+[
+  {
+    "id": "glb:majmua",
+    "file": "assets/buildings/majmua.glb",
+    "source": "assets-src/buildings/majmua.glb",
+    "label": "Majmua",
+    "hint": "Ko'p korpusli majmua (4-rasm)",
+    "size": [
+      41.24,
+      11.665,
+      35.17
+    ],
+    "tris": 12864,
+    "materials": [
+      {
+        "name": "Light grey concrete frame",
+        "color": [
+          0.63,
+          0.63,
+          0.64
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Warm yellow lit windows",
+        "color": [
+          1,
+          0.8,
+          0.32
+        ],
+        "emissive": true,
+        "issues": []
+      },
+      {
+        "name": "Muted blue grey windows",
+        "color": [
+          0.27,
+          0.28,
+          0.32
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Coral red facade",
+        "color": [
+          0.68,
+          0.19,
+          0.12
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Pale roof slabs",
+        "color": [
+          0.81,
+          0.83,
+          0.88
+        ],
+        "emissive": false,
+        "issues": []
+      }
+    ],
+    "fixes": [
+      "removed embedded lights",
+      "12 mirrored nodes (winding handled by three.js)",
+      "centered (-1.45, 0.415)",
+      "no textures (colour materials only)",
+      "merged 1080 nodes into 5 meshes"
+    ],
+    "warnings": []
+  },
+  {
+    "id": "glb:minora",
+    "file": "assets/buildings/minora.glb",
+    "source": "assets-src/buildings/minora.glb",
+    "label": "Minora",
+    "hint": "Baland minora (1-rasm)",
+    "size": [
+      24.4,
+      42.37,
+      8.9
+    ],
+    "tris": 17532,
+    "materials": [
+      {
+        "name": "Light concrete piers",
+        "color": [
+          0.65,
+          0.66,
+          0.68
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Slate blue opaque glazing",
+        "color": [
+          0.29,
+          0.35,
+          0.43
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Yellow illuminated windows",
+        "color": [
+          1,
+          0.83,
+          0.39
+        ],
+        "emissive": true,
+        "issues": []
+      },
+      {
+        "name": "Red orange spandrels",
+        "color": [
+          0.67,
+          0.18,
+          0.1
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Cream roof and canopy",
+        "color": [
+          0.86,
+          0.83,
+          0.77
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Warm grey side glazing",
+        "color": [
+          0.4,
+          0.43,
+          0.43
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Sunny side orange",
+        "color": [
+          0.78,
+          0.26,
+          0.12
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Cream rooftop housing",
+        "color": [
+          0.78,
+          0.73,
+          0.64
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Roof terrace grey",
+        "color": [
+          0.41,
+          0.45,
+          0.51
+        ],
+        "emissive": false,
+        "issues": []
+      }
+    ],
+    "fixes": [
+      "removed embedded lights",
+      "no textures (colour materials only)",
+      "merged 1471 nodes into 9 meshes"
+    ],
+    "warnings": []
+  },
+  {
+    "id": "glb:texnik_bino",
+    "file": "assets/buildings/texnik_bino.glb",
+    "source": "assets-src/buildings/texnik_bino.glb",
+    "label": "Texnik bino",
+    "hint": "G'ishtli texnik bino, ikki mo'rili (3-rasm)",
+    "size": [
+      32.385,
+      15.872,
+      13.615
+    ],
+    "tris": 34388,
+    "materials": [
+      {
+        "name": "Dark brick joints",
+        "color": [
+          0.26,
+          0.13,
+          0.105
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Grey chimney metal",
+        "color": [
+          0.3,
+          0.31,
+          0.35
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Dark chimney interior",
+        "color": [
+          0.045,
+          0.055,
+          0.075
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Warm concrete housings",
+        "color": [
+          0.58,
+          0.55,
+          0.51
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Charcoal window frame",
+        "color": [
+          0.1,
+          0.12,
+          0.16
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Dark blue grey louvres",
+        "color": [
+          0.13,
+          0.18,
+          0.25
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Grey stone window reveals",
+        "color": [
+          0.42,
+          0.43,
+          0.46
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Burnt red brick",
+        "color": [
+          0.57,
+          0.18,
+          0.105
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "White roof coping",
+        "color": [
+          0.8,
+          0.83,
+          0.88
+        ],
+        "emissive": false,
+        "issues": []
+      }
+    ],
+    "fixes": [
+      "removed embedded lights",
+      "centered (-2.067, 0)",
+      "grounded (0.013)",
+      "no textures (colour materials only)",
+      "merged 467 nodes into 10 meshes"
+    ],
+    "warnings": []
+  },
+  {
+    "id": "glb:uch_qavatli",
+    "file": "assets/buildings/uch_qavatli.glb",
+    "source": "assets-src/buildings/uch_qavatli.glb",
+    "label": "Uch qavatli",
+    "hint": "Uzun uch qavatli bino (5-rasm)",
+    "size": [
+      30.53,
+      9.87,
+      12.53
+    ],
+    "tris": 3564,
+    "materials": [
+      {
+        "name": "Terracotta facade",
+        "color": [
+          0.68,
+          0.19,
+          0.105
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Pale concrete structure",
+        "color": [
+          0.68,
+          0.69,
+          0.71
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Warm lit windows",
+        "color": [
+          1,
+          0.83,
+          0.39
+        ],
+        "emissive": true,
+        "issues": []
+      },
+      {
+        "name": "Slate blue window glass",
+        "color": [
+          0.22,
+          0.28,
+          0.37
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Recessed window frame",
+        "color": [
+          0.34,
+          0.36,
+          0.4
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Flat light grey roof",
+        "color": [
+          0.8,
+          0.81,
+          0.83
+        ],
+        "emissive": false,
+        "issues": []
+      },
+      {
+        "name": "Roof vent blue grey",
+        "color": [
+          0.21,
+          0.27,
+          0.36
+        ],
+        "emissive": false,
+        "issues": []
+      }
+    ],
+    "fixes": [
+      "removed embedded lights",
+      "no textures (colour materials only)",
+      "merged 305 nodes into 7 meshes"
+    ],
+    "warnings": []
+  }
+]

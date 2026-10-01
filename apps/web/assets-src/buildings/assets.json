@@ -1,0 +1,7 @@
+{
+  "_comment": "Source GLBs for the asset library. Drop a new .glb here and run `npm run assets`. Optional per-file overrides: label, rotateY (degrees), upAxis ('y'|'z'), scale.",
+  "minora.glb": { "label": "Minora", "hint": "Baland minora (1-rasm)" },
+  "texnik_bino.glb": { "label": "Texnik bino", "hint": "G'ishtli texnik bino, ikki mo'rili (3-rasm)" },
+  "majmua.glb": { "label": "Majmua", "hint": "Ko'p korpusli majmua (4-rasm)" },
+  "uch_qavatli.glb": { "label": "Uch qavatli", "hint": "Uzun uch qavatli bino (5-rasm)" }
+}
