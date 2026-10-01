@@ -25,8 +25,6 @@ export async function exportExcel({ config, today, source }) {
     { header: 'Dam olishda, daq', key: 'rest', width: 15 },
     { header: 'Uzoq harakatsiz, marta', key: 'idleCount', width: 14 },
     { header: 'Uzoq harakatsiz, daq', key: 'idle', width: 14 },
-    { header: 'Qadamlar (taxminiy)', key: 'steps', width: 14 },
-    { header: 'Masofa, m (taxminiy)', key: 'distance', width: 14 },
     { header: 'Xonalar soni', key: 'rooms', width: 11 },
     { header: 'Namuna', key: 'demo', width: 9 },
   ];
@@ -46,8 +44,6 @@ export async function exportExcel({ config, today, source }) {
       rest: minutes(r.restMs),
       idleCount: r.idleCount,
       idle: minutes(r.idleLongMs),
-      steps: r.steps,
-      distance: r.distanceM,
       rooms: r.roomsVisited,
       demo: s.demo ? 'ha' : '',
     });

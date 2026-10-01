@@ -11,7 +11,6 @@ const COLUMNS = [
   { key: 'workMs', label: 'Ish zonasida', get: (r) => r.workMs },
   { key: 'restMs', label: 'Dam olishda', get: (r) => r.restMs },
   { key: 'idleCount', label: 'Uzoq harakatsiz', get: (r) => r.idleLongMs },
-  { key: 'steps', label: 'Qadamlar', get: (r) => r.steps },
   { key: 'roomsVisited', label: 'Xonalar', get: (r) => r.roomsVisited },
 ];
 
@@ -105,7 +104,6 @@ export function TodayPanel({ config, today, roleFilter, source, onSelect, select
                   <td>{hoursMinutes(r.workMs)}</td>
                   <td>{hoursMinutes(r.restMs)}</td>
                   <td>{r.idleCount ? `${r.idleCount} marta, ${hoursMinutes(r.idleLongMs)}` : '—'}</td>
-                  <td>{r.steps.toLocaleString('ru-RU')}</td>
                   <td>{r.roomsVisited}</td>
                 </tr>
               ))}

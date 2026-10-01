@@ -6,6 +6,12 @@ import { STATUS_COLORS } from '../scene/engine/palette.js';
 import { formatDuration, formatClock, pct, activityLevel, STATUS_LABELS, minuteOfDay } from '../format.js';
 import { formatMinutes } from '../../../shared/time.js';
 
+// Qisqa vaqt: "17 daq" yoki "1:26 soat" (kichik blokka sig'ishi uchun).
+function compact(ms) {
+  const m = Math.round(ms / 60000);
+  return m < 60 ? `${m} daq` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} soat`;
+}
+
 // Odamchani bosganda chapdan chiqadigan xodim paneli (5-rasm uslubida, kompyuterga moslangan).
 export function EmployeeInfoCard({ staff, state, summary, role, roomById, source, now, onClose, onFocus }) {
   const [segments, setSegments] = useState(null);
@@ -54,13 +60,13 @@ export function EmployeeInfoCard({ staff, state, summary, role, roomById, source
         </div>
         <div>
           <span className="st-ico"><Icon name="clock" size={16} /></span>
-          <b>{since != null ? formatDuration(since).replace(' daqiqa', ' daq') : '—'}</b>
+          <b>{since != null ? compact(since) : '—'}</b>
           <small>Shu joyda</small>
         </div>
         <div>
-          <span className="st-ico"><Icon name="steps" size={16} /></span>
-          <b>{summary ? summary.steps.toLocaleString('ru-RU') : '—'}</b>
-          <small>Qadam</small>
+          <span className="st-ico"><Icon name="activity" size={16} /></span>
+          <b>{summary ? compact(summary.movingMs) : '—'}</b>
+          <small>Harakatda</small>
         </div>
       </div>
 
@@ -91,7 +97,7 @@ export function EmployeeInfoCard({ staff, state, summary, role, roomById, source
           <div className="muted small">Lavozim harakat normasi: {Math.round((role?.norm ?? 0) * 100)}% · foiz yordamchi ko'rsatkich</div>
           {summary && summary.presentMs > 0 && (
             <div className="mini-grid">
-              <div><b>{formatDuration(summary.movingMs)}</b><small>harakatda</small></div>
+              <div><b>{summary.roomsVisited}</b><small>xonaga kirgan</small></div>
               <div><b>{formatDuration(summary.workMs)}</b><small>ish zonasida</small></div>
               <div><b>{formatDuration(summary.restMs)}</b><small>dam olishda</small></div>
               <div><b>{summary.idleCount} marta</b><small>uzoq harakatsiz</small></div>
