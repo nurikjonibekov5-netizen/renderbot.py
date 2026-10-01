@@ -80,4 +80,6 @@ ${guard}
 </html>
 `;
 writeFileSync('Klinika_3D_namuna.html', html);
+// GitHub Pages sayti (https://<foydalanuvchi>.github.io/<loyiha>/) shu faylni ochadi.
+writeFileSync('index.html', html);
 console.log(`Yozildi: Klinika_3D_namuna.html (${(html.length / 1024 / 1024).toFixed(2)} MB)`);
