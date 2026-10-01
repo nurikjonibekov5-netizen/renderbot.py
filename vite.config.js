@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
       outDir: demo ? '../dist-demo' : 'dist',
       emptyOutDir: true,
       chunkSizeWarningLimit: 2500,
+      // Eski brauzerlarda ham ochilishi uchun (Chrome/Edge 87+, Firefox 78+, Safari 14+).
+      target: ['es2020', 'chrome87', 'edge88', 'firefox78', 'safari14'],
     },
     server: {
       port: 5173,
