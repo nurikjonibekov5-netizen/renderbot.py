@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Timeline, TimelineLegend } from './Timeline.jsx';
-import { hoursMinutes, pct, activityLevel } from '../format.js';
+import { pct, activityLevel } from '../format.js';
 import { exportExcel } from '../excel.js';
 
 const COLUMNS = [
   { key: 'name', label: 'Xodim', get: (r) => r.staff.name },
   { key: 'role', label: 'Lavozim', get: (r) => r.staff.role },
   { key: 'activity', label: 'Faollik', get: (r) => r.activity ?? -1 },
-  { key: 'movingMs', label: 'Harakatda', get: (r) => r.movingMs },
-  { key: 'workMs', label: 'Ish zonasida', get: (r) => r.workMs },
-  { key: 'restMs', label: 'Dam olishda', get: (r) => r.restMs },
-  { key: 'idleCount', label: 'Uzoq harakatsiz', get: (r) => r.idleLongMs },
-  { key: 'roomsVisited', label: 'Xonalar', get: (r) => r.roomsVisited },
 ];
 
 // "Bugun" paneli: barcha xodimlar faollik bo'yicha saralangan jadval va kunlik tasmalar.
@@ -100,16 +95,11 @@ export function TodayPanel({ config, today, roleFilter, source, onSelect, select
                       <b className={`lvl-${activityLevel(r.activity)}`}>{pct(r.activity)}</b>
                     </div>
                   </td>
-                  <td>{hoursMinutes(r.movingMs)}</td>
-                  <td>{hoursMinutes(r.workMs)}</td>
-                  <td>{hoursMinutes(r.restMs)}</td>
-                  <td>{r.idleCount ? `${r.idleCount} marta, ${hoursMinutes(r.idleLongMs)}` : '—'}</td>
-                  <td>{r.roomsVisited}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="muted small note">Vaqtlar soat:daqiqa ko'rinishida. Faollik foizi lavozim normasiga nisbatan hisoblanadi va faqat yordamchi ko'rsatkich.</p>
+          <p className="muted small note">Faollik foizi lavozim normasiga nisbatan hisoblanadi va faqat yordamchi ko'rsatkich.</p>
         </div>
       ) : (
         <div className="tl-list">
