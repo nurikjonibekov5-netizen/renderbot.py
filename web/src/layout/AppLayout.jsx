@@ -1,12 +1,10 @@
-// Umumiy tuzilma: chapda panel, tepada sarlavha, qolgan joy - asosiy sahna.
-export function AppLayout({ side, top, children }) {
+// Umumiy tuzilma (1-rasm): tepada ingichka panel, keyin sarlavha qatori, qolgan joy - sahna.
+export function AppLayout({ top, header, children }) {
   return (
     <div className="app-layout">
-      {side}
-      <div className="app-main">
-        {top}
-        {children}
-      </div>
+      {top}
+      {header}
+      {children}
     </div>
   );
 }

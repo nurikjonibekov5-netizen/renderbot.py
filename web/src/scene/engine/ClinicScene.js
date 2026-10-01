@@ -17,15 +17,21 @@ import { buildExterior, highlightStorey, STOREY } from './exterior.js';
 import { buildInteriorFloor } from './interior.js';
 import { loadModelFloor } from './gltf.js';
 import { createCharacter } from './characters.js';
+import { buildHome, updateHome } from './dashboard.js';
 
 const EXPLODE_GAP = 8.5;
+// "Bosh sahifa" maydonchalari binodan old tomonda, alohida joyda turadi.
+const HOME_Z = 95;
 const FADE_SPEED = 5;
 
 export class ClinicScene {
   constructor(container, handlers = {}) {
     this.container = container;
     this.h = { onSelect() {}, onViewChange() {}, onModelInfo() {}, onHoverFloor() {}, ...handlers };
-    this.view = { mode: 'overview', floor: null };
+    this.view = { mode: 'home', floor: null };
+    this.homeVis = 0;
+    this.homeTarget = 0;
+    this.hoverHome = null;
     this.roleFilter = null;
     this.selectedId = null;
     this.people = new Map();
@@ -146,7 +152,21 @@ export class ClinicScene {
       this.floors.set(f, state);
     }
     for (const s of config.staff) this.#createPerson(s);
-    this.setView('overview', null, { animate: false });
+    this.home = buildHome(config);
+    this.home.group.position.z = HOME_Z;
+    this.world.add(this.home.group);
+    for (const p of this.home.platforms.values()) {
+      for (const el of [p.tagEl, p.statsEl]) {
+        el.addEventListener('pointerdown', (e) => e.stopPropagation());
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.setView('floor', p.f);
+        });
+        el.addEventListener('pointerenter', () => this.#hoverPlatform(p.f));
+        el.addEventListener('pointerleave', () => this.#hoverPlatform(null));
+      }
+    }
+    this.setView('home', null, { animate: false });
     this.#loadModels(config.models || {});
   }
 
@@ -292,6 +312,29 @@ export class ClinicScene {
       p.ch.setStatus(st.status);
     }
     this.#updateChips();
+    this.#updateHome();
+  }
+
+  #updateHome() {
+    if (!this.home || !this.lastSnapshot) return;
+    const staffById = new Map([...this.people.values()].map((p) => [p.staff.id, p.staff]));
+    const rebuilt = updateHome(this.home, { snapshot: this.lastSnapshot, staffById, roles: this.config.roles, roleFilter: this.roleFilter });
+    if (rebuilt) {
+      this.home.group.userData.fadeList = null;
+      setGroupOpacity(this.home.group, this.homeVis);
+      this.homeApplied = this.homeVis;
+    }
+  }
+
+  #hoverPlatform(f) {
+    if (this.hoverHome === f) return;
+    this.hoverHome = f;
+    for (const p of this.home.platforms.values()) {
+      p.liftTarget = p.f === f ? 0.45 : 0;
+      p.slab.material.emissiveIntensity = p.f === f ? 0.06 : 0;
+      p.tagEl.classList.toggle('hover', p.f === f);
+    }
+    this.h.onHoverFloor(f);
   }
 
   #updateChips() {
@@ -310,7 +353,7 @@ export class ClinicScene {
 
   // ------------------------------------------------------------------ ko'rinishlar
   setView(mode, floor = null, { animate = true } = {}) {
-    if (mode === 'floor' && !this.floors.has(floor)) mode = 'overview';
+    if (mode === 'floor' && !this.floors.has(floor)) mode = 'home';
     this.view = { mode, floor: mode === 'floor' ? floor : null };
     for (const [f, st] of this.floors) {
       st.visTarget = mode === 'all' || (mode === 'floor' && f === floor) ? 1 : 0;
@@ -318,7 +361,9 @@ export class ClinicScene {
       st.yTarget = mode === 'all' ? i * EXPLODE_GAP + 0.35 : this.#naturalY(f);
     }
     this.exteriorTarget = mode === 'overview' ? 1 : 0;
-    this.siteTarget = mode === 'overview' ? 1 : 0.14;
+    this.siteTarget = mode === 'overview' ? 1 : mode === 'home' ? 0 : 0.14;
+    this.homeTarget = mode === 'home' ? 1 : 0;
+    if (mode !== 'home' && this.home) this.#hoverPlatform(null);
     if (!animate) {
       for (const st of this.floors.values()) {
         st.vis = st.visTarget;
@@ -332,6 +377,9 @@ export class ClinicScene {
       this.exterior.applied = this.exteriorVis;
       this.siteVis = this.siteTarget;
       setGroupOpacity(this.site, this.siteVis);
+      this.homeVis = this.homeTarget;
+      setGroupOpacity(this.home.group, this.homeVis);
+      this.homeApplied = this.homeVis;
     }
     highlightStorey(this.exterior.bands, null);
     this.#frameView(animate);
@@ -340,7 +388,10 @@ export class ClinicScene {
 
   #frameView(animate) {
     const { mode, floor } = this.view;
-    if (mode === 'overview') {
+    if (mode === 'home') {
+      const box = this.home.bounds.clone().translate(this.home.group.position);
+      this.#fly(box, V(0.38, 0.62, 1), animate, 0.98);
+    } else if (mode === 'overview') {
       const box = this.exterior.box.clone();
       box.expandByVector(V(10, 0, 10));
       this.#fly(box, V(1, 0.78, 1.15), animate, 0.95);
@@ -407,6 +458,7 @@ export class ClinicScene {
   setRoleFilter(roles) {
     this.roleFilter = roles && roles.size ? roles : null;
     this.#updateChips();
+    this.#updateHome();
   }
 
   setSelected(id) {
@@ -427,6 +479,7 @@ export class ClinicScene {
       }
       this.exteriorTarget = 0;
       this.siteTarget = 0.14;
+      this.homeTarget = 0;
       this.h.onViewChange({ ...this.view });
     }
     const dest = p.path.length ? p.path[p.path.length - 1] : p.cur;
@@ -461,6 +514,21 @@ export class ClinicScene {
       if (this.exterior.applied !== this.exteriorVis) {
         setGroupOpacity(this.exterior.group, this.exteriorVis);
         this.exterior.applied = this.exteriorVis;
+      }
+    }
+    if (this.home) {
+      const hv = this.homeVis + (this.homeTarget - this.homeVis) * a;
+      this.homeVis = Math.abs(hv - this.homeTarget) < 0.004 ? this.homeTarget : hv;
+      if (this.homeApplied !== this.homeVis) {
+        setGroupOpacity(this.home.group, this.homeVis);
+        this.homeApplied = this.homeVis;
+      }
+      for (const p of this.home.platforms.values()) {
+        p.liftY += (p.liftTarget - p.liftY) * Math.min(1, dt * 10);
+        p.lift.position.y = p.liftY;
+        p.people.children.forEach((c, i) => {
+          c.children[0].position.y = Math.abs(Math.sin(performance.now() / 600 + i * 1.3)) * 0.04;
+        });
       }
     }
     if (this.site && this.siteTarget != null) {
@@ -556,6 +624,13 @@ export class ClinicScene {
     this.raycaster.setFromCamera(this.pointer, this.camera);
   }
 
+  #platformUnderPointer() {
+    if (this.homeVis < 0.6) return null;
+    const targets = [...this.home.platforms.values()].map((p) => p.lift);
+    const hit = this.raycaster.intersectObjects(targets, true).find((h) => h.object.userData.homeFloor);
+    return hit?.object.userData.homeFloor ?? null;
+  }
+
   #storeyUnderPointer() {
     if (this.view.mode !== 'overview' || this.exteriorVis < 0.6) return null;
     const hits = this.raycaster.intersectObjects([...this.exterior.bands.values()], true);
@@ -569,6 +644,12 @@ export class ClinicScene {
     el.addEventListener('pointermove', (e) => {
       if (!this.exterior) return;
       this.#pick(e);
+      if (this.view.mode === 'home') {
+        const hf = this.#platformUnderPointer();
+        el.style.cursor = hf ? 'pointer' : '';
+        this.#hoverPlatform(hf);
+        return;
+      }
       const f = this.#storeyUnderPointer();
       let overPerson = false;
       if (this.view.mode !== 'overview') {
@@ -585,6 +666,11 @@ export class ClinicScene {
     el.addEventListener('pointerup', (e) => {
       if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
       this.#pick(e);
+      if (this.view.mode === 'home') {
+        const hf = this.#platformUnderPointer();
+        if (hf) this.setView('floor', hf);
+        return;
+      }
       if (this.view.mode === 'overview') {
         const f = this.#storeyUnderPointer();
         if (f) this.setView('floor', f);

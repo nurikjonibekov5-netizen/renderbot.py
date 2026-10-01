@@ -6,6 +6,9 @@ export function FloorSelector({ floors, view, counts, onChange }) {
   const isOn = (mode, f) => view.mode === mode && (mode !== 'floor' || view.floor === f);
   return (
     <nav className="floor-selector" aria-label="Qavatlar">
+      <button className={`fs-btn icon ${isOn('home') ? 'on' : ''}`} onClick={() => onChange('home')} title="Bosh sahifa" aria-label="Bosh sahifa">
+        <Icon name="home" size={18} />
+      </button>
       <button className={`fs-btn icon ${isOn('overview') ? 'on' : ''}`} onClick={() => onChange('overview')} title="Bino (tashqi ko'rinish)" aria-label="Bino">
         <Icon name="building" size={18} />
       </button>

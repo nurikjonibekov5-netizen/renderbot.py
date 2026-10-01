@@ -162,7 +162,56 @@ export class ClinicEngine {
       t: this.t,
       day: dayKey(this.t),
       rows: this.clinic.staff.map((s) => this.tracker.summary(s.id)),
+      series: this.series(),
+      events: this.recentEvents(),
     };
+  }
+
+  // Bugungi tasmalardan so'nggi voqealar (sahifa ochilganda "Yangiliklar" bo'sh turmasligi uchun).
+  // Maxfiy zona nomi hech qachon yozilmaydi.
+  recentEvents(limit = 20) {
+    const out = [];
+    for (const s of this.clinic.staff) {
+      let prev = null;
+      for (const seg of this.tracker.timeline(s.id)) {
+        const gap = !prev || seg.s - prev.e > 60 * 1000;
+        const base = { staffId: s.id, name: s.name, t: seg.s, id: `${s.id}-${seg.s}` };
+        if (gap) out.push({ ...base, kind: 'in', text: 'binoga keldi' });
+        else if (seg.kind === 'lost' && prev.kind !== 'lost') out.push({ ...base, kind: 'warn', text: 'signal yo\'qoldi' });
+        else if (seg.private && !prev.private) out.push({ ...base, kind: 'move', text: `${seg.floor}-qavat, maxfiy zonaga o'tdi` });
+        else if (seg.room && seg.room !== prev.room) {
+          const room = this.clinic.roomById.get(seg.room);
+          if (room && room.type !== 'koridor') out.push({ ...base, kind: 'move', text: `${room.label}ga kirdi` });
+        }
+        prev = seg;
+      }
+      if (prev && this.tracker.state(s.id, this.t)?.present === false) {
+        out.push({ staffId: s.id, name: s.name, t: prev.e, id: `${s.id}-${prev.e}-out`, kind: 'out', text: 'binodan chiqdi' });
+      }
+    }
+    return out.sort((a, b) => b.t - a.t).slice(0, limit);
+  }
+
+  // Kun davomidagi holat: har 30 daqiqada binoda, harakatda va signalsiz xodimlar soni.
+  // Pastdagi kichik grafiklar shundan chiziladi.
+  series(stepMs = 30 * MIN) {
+    const start = dayStart(this.t) + 7 * HOUR;
+    const points = [];
+    for (let t = start; t <= this.t; t += stepMs) points.push({ t, present: 0, moving: 0, lost: 0 });
+    if (!points.length || points[points.length - 1].t < this.t) points.push({ t: this.t, present: 0, moving: 0, lost: 0 });
+    for (const s of this.clinic.staff) {
+      const segs = this.tracker.timeline(s.id);
+      let i = 0;
+      for (const p of points) {
+        while (i < segs.length && segs[i].e < p.t) i++;
+        const seg = segs[i];
+        if (!seg || seg.s > p.t) continue;
+        p.present += 1;
+        if (seg.kind === 'lost') p.lost += 1;
+        else if (seg.moving) p.moving += 1;
+      }
+    }
+    return points;
   }
 
   timeline(staffId) {

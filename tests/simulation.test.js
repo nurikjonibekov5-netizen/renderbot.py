@@ -85,3 +85,25 @@ test("xodim xonadan xonaga koridor orqali o'tadi", () => {
     }
   }
 });
+
+test("kunlik qator (grafiklar uchun) hozirgi holat bilan mos", () => {
+  const { e } = runDay(12);
+  const series = e.today().series;
+  assert.ok(series.length >= 10);
+  const last = series[series.length - 1];
+  assert.equal(last.t, e.now());
+  const present = e.snapshot().staff.filter((s) => s.present).length;
+  assert.ok(Math.abs(last.present - present) <= 1, `${last.present} / ${present}`);
+  assert.equal(series[0].present, 0);
+  for (let i = 1; i < series.length; i++) assert.ok(series[i].t > series[i - 1].t);
+});
+
+test("so'nggi voqealar: tartiblangan, maxfiy xona nomisiz", () => {
+  const { c, e } = runDay(14);
+  const ev = e.recentEvents(50);
+  assert.ok(ev.length > 10);
+  for (let i = 1; i < ev.length; i++) assert.ok(ev[i - 1].t >= ev[i].t);
+  const priv = c.rooms.filter((r) => r.type === 'maxfiy');
+  const json = JSON.stringify(ev);
+  for (const r of priv) assert.ok(!json.includes(r.id) && !json.includes(`${r.label}ga`), r.id);
+});
